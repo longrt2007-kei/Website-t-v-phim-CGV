@@ -1041,3 +1041,35 @@ body.nav-open { overflow: hidden; }
 
   .newsletter { flex-direction: column; }
 }
+
+/* ---------- Upcoming showtimes ---------- */
+.upcoming-controls {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.upcoming-controls .tabs {
+  margin-bottom: 0;
+}
+
+.upcoming-date-tab {
+  min-width: 150px;
+}
+
+.upcoming-theater-tab {
+  font-size: 12px;
+}
+
+.empty-showtimes {
+  padding: 28px 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .upcoming-date-tab {
+    min-width: auto;
+    flex: 1;
+  }
+}

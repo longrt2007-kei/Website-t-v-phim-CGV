@@ -77,6 +77,83 @@ const showtimes = {
   ],
 }
 
+const upcomingShowtimes = {
+  '25/09': {
+    label: 'Thứ Sáu · 25/09',
+    theaters: {
+      ct1: [
+        { title: 'The Batman Part II', format: '2D Phụ đề', times: ['10:30', '14:00', '18:00', '21:15'] },
+        { title: 'Avatar 4', format: '2D Lồng tiếng', times: ['09:00', '12:30', '16:00', '19:30'] },
+        { title: 'Toy Story 5', format: '3D Lồng tiếng', times: ['10:00', '13:30', '17:00', '20:30'] },
+      ],
+      ct2: [
+        { title: 'Avatar 4', format: 'IMAX 2D Phụ đề', times: ['09:15', '12:45', '16:15', '20:00'] },
+        { title: 'The Batman Part II', format: '2D Phụ đề', times: ['11:00', '15:00', '18:30', '21:30'] },
+        { title: 'Làm Giàu Với Ma', format: '2D Phụ đề', times: ['10:30', '14:30', '19:00'] },
+      ],
+      ct3: [
+        { title: 'Toy Story 5', format: '2D Phụ đề', times: ['09:30', '13:00', '16:30', '20:00'] },
+        { title: 'Drowne', format: '4DX 2D Phụ đề', times: ['11:15', '17:45', '21:15'] },
+      ],
+    },
+  },
+  '26/09': {
+    label: 'Thứ Bảy · 26/09',
+    theaters: {
+      ct1: [
+        { title: 'The Batman Part II', format: '2D Phụ đề', times: ['09:30', '13:00', '16:30', '20:00'] },
+        { title: 'Avatar 4', format: '2D Lồng tiếng', times: ['10:00', '14:00', '17:30', '21:00'] },
+        { title: 'Drowne', format: '2D Phụ đề', times: ['11:30', '18:30', '22:00'] },
+      ],
+      ct2: [
+        { title: 'Avatar 4', format: 'IMAX 2D Phụ đề', times: ['09:00', '12:00', '15:30', '19:00', '22:00'] },
+        { title: 'Toy Story 5', format: '3D Lồng tiếng', times: ['10:30', '14:30', '18:00', '20:30'] },
+        { title: 'Làm Giàu Với Ma', format: '2D Phụ đề', times: ['11:00', '15:00', '19:30'] },
+      ],
+      ct3: [
+        { title: 'The Batman Part II', format: '2D Phụ đề', times: ['10:00', '13:30', '17:00', '21:00'] },
+        { title: 'Drowne', format: '4DX 2D Phụ đề', times: ['12:15', '18:15', '21:45'] },
+      ],
+    },
+  },
+  '27/09': {
+    label: 'Chủ Nhật · 27/09',
+    theaters: {
+      ct1: [
+        { title: 'Avatar 4', format: '2D Lồng tiếng', times: ['09:00', '12:30', '16:00', '19:30'] },
+        { title: 'Toy Story 5', format: '3D Lồng tiếng', times: ['10:00', '13:30', '17:00', '20:30'] },
+        { title: 'The Batman Part II', format: '2D Phụ đề', times: ['11:00', '14:30', '18:00', '21:30'] },
+      ],
+      ct2: [
+        { title: 'The Batman Part II', format: 'IMAX 2D Phụ đề', times: ['09:30', '13:00', '16:30', '20:00'] },
+        { title: 'Avatar 4', format: 'IMAX 2D Phụ đề', times: ['10:30', '14:00', '17:30', '21:00'] },
+        { title: 'Làm Giàu Với Ma', format: '2D Lồng tiếng', times: ['11:30', '15:30', '19:30'] },
+      ],
+      ct3: [
+        { title: 'Toy Story 5', format: '2D Phụ đề', times: ['09:15', '12:45', '16:15', '19:45'] },
+        { title: 'Drowne', format: '4DX 2D Phụ đề', times: ['10:45', '17:30', '21:30'] },
+      ],
+    },
+  },
+}
+
+const renderUpcomingShowtimes = (dateKey, theaterId) => {
+  const date = upcomingShowtimes[dateKey]
+  const rows = date?.theaters?.[theaterId] || []
+  if (!rows.length) return '<p class="empty-showtimes">Chưa có lịch chiếu cho ngày này.</p>'
+  return rows.map((s) => `
+    <div class="st-row">
+      <div class="st-info">
+        <h4>${s.title}</h4>
+        <span class="st-format">${s.format}</span>
+      </div>
+      <div class="st-times">
+        ${s.times.map((t) => `<button type="button" class="time-chip">${t}</button>`).join('')}
+      </div>
+    </div>
+  `).join('')
+}
+
 const poster = (m, opts = {}) => `
   <div class="poster" style="background:${m.color}">
     <div class="poster-glow"></div>
@@ -122,6 +199,7 @@ document.querySelector('#app').innerHTML = `
     <nav class="nav" id="nav">
       <a href="#showing">PHIM</a>
       <a href="#showtimes">LỊCH CHIẾU</a>
+      <a href="#upcoming">SẮP TỚI</a>
       <a href="#promo">KHUYẾN MÃI</a>
       <a href="#news">TIN TỨC</a>
       <a href="#member">THÀNH VIÊN</a>
@@ -205,6 +283,33 @@ document.querySelector('#app').innerHTML = `
     <div class="tab-sub" id="theaterAddr">${theaters[0].name} · ${theaters[0].addr}</div>
     <div class="showtimes" id="showtimesBox">
       ${renderShowtimes('ct1')}
+    </div>
+  </div>
+</section>
+
+<section id="upcoming" class="section section-alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>LỊCH CHIẾU SẮP TỚI</h2>
+      <span class="see-all">Đặt vé trước</span>
+    </div>
+    <div class="upcoming-controls">
+      <div class="tabs" id="upcomingDateTabs">
+        ${Object.entries(upcomingShowtimes).map(([dateKey, date], index) =>
+          `<button type="button" class="tab upcoming-date-tab ${index === 0 ? 'active' : ''}" data-date="${dateKey}">${date.label}</button>`
+        ).join('')}
+      </div>
+      <div class="tabs" id="upcomingTheaterTabs">
+        ${theaters.map((t, index) =>
+          `<button type="button" class="tab upcoming-theater-tab ${index === 0 ? 'active' : ''}" data-id="${t.id}">${t.name}</button>`
+        ).join('')}
+      </div>
+    </div>
+    <div class="tab-sub" id="upcomingSub">
+      ${upcomingShowtimes['25/09'].label} · ${theaters[0].name} · ${theaters[0].addr}
+    </div>
+    <div class="showtimes" id="upcomingBox">
+      ${renderUpcomingShowtimes('25/09', 'ct1')}
     </div>
   </div>
 </section>
@@ -463,6 +568,34 @@ tabs.forEach((tab) => {
     const th = theaters.find((t) => t.id === tab.dataset.id)
     document.querySelector('#theaterAddr').textContent = `${th.name} · ${th.addr}`
     document.querySelector('#showtimesBox').innerHTML = renderShowtimes(tab.dataset.id)
+  })
+})
+
+let upcomingDate = '25/09'
+let upcomingTheater = 'ct1'
+
+const updateUpcomingShowtimes = () => {
+  const date = upcomingShowtimes[upcomingDate]
+  const theater = theaters.find((t) => t.id === upcomingTheater)
+  document.querySelector('#upcomingSub').textContent = `${date.label} · ${theater.name} · ${theater.addr}`
+  document.querySelector('#upcomingBox').innerHTML = renderUpcomingShowtimes(upcomingDate, upcomingTheater)
+}
+
+document.querySelectorAll('.upcoming-date-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.upcoming-date-tab').forEach((t) => t.classList.remove('active'))
+    tab.classList.add('active')
+    upcomingDate = tab.dataset.date
+    updateUpcomingShowtimes()
+  })
+})
+
+document.querySelectorAll('.upcoming-theater-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.upcoming-theater-tab').forEach((t) => t.classList.remove('active'))
+    tab.classList.add('active')
+    upcomingTheater = tab.dataset.id
+    updateUpcomingShowtimes()
   })
 })
 
