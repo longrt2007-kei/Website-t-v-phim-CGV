@@ -142,6 +142,7 @@ const theaters = [
 
 const regionLabels = { north: 'Miền Bắc', central: 'Miền Trung', south: 'Miền Nam' }
 const allMovies = [...showing, ...comingSoon]
+const seedMoviesById = Object.fromEntries(allMovies.map((movie, index) => [String(index + 1), movie]))
 const currentMovieCount = showing.length
 const vnMovieCount = allMovies.filter((m) => m.origin === 'vn').length
 const intlMovieCount = allMovies.filter((m) => m.origin === 'intl').length
@@ -198,7 +199,7 @@ const movieDetails = {
 
 const getMovieDetail = (movie) => movieDetails[movie.title] || {
   synopsis: movie.short || 'Thông tin nội dung đang được cập nhật.',
-  director: 'Đang cập nhật', cast: 'Đang cập nhật', producer: 'Đang cập nhật', country: movie.country || 'Đang cập nhật', language: movie.origin === 'intl' ? 'Tiếng Anh · Phụ đề Việt' : 'Tiếng Việt', formats: '2D', release: movie.date || 'Đang cập nhật', duration: movie.meta || 'Đang cập nhật', classification: movie.genre || 'Đang cập nhật', genreFull: movie.meta || 'Đang cập nhật', highlight: 'Thông tin đang được cập nhật.', sourceName: 'Đang cập nhật', sourceUrl: '#',
+  director: movie.director || 'Đang cập nhật', cast: 'Đang cập nhật', producer: 'Đang cập nhật', country: movie.country || 'Đang cập nhật', language: movie.origin === 'intl' ? 'Tiếng Anh · Phụ đề Việt' : 'Tiếng Việt', formats: '2D', release: movie.date || 'Đang cập nhật', duration: movie.meta || 'Đang cập nhật', classification: movie.genre || 'Đang cập nhật', genreFull: movie.meta || 'Đang cập nhật', highlight: 'Thông tin đang được cập nhật.', sourceName: 'Dữ liệu quản lý phim', sourceUrl: '/admin.html',
 }
 
 const renderUpcomingShowtimes = (dateKey, theaterId) => {
@@ -287,6 +288,7 @@ document.querySelector('#app').innerHTML = `
     <div class="header-actions">
       <button type="button" class="icon-btn" id="searchOpen" aria-label="Tìm kiếm">${icons.search}</button>
       <button type="button" class="login-btn ticket-history-btn" id="myTicketsOpen">${icons.ticket}<span>VÉ CỦA TÔI</span></button>
+      <a class="login-btn" href="/admin.html">${icons.dashboard}<span>QUẢN LÝ PHIM</span></a>
       <button type="button" class="login-btn" id="adminLoginOpen">${icons.user}<span>ADMIN</span></button>
     </div>
   </div>
@@ -298,7 +300,7 @@ document.querySelector('#app').innerHTML = `
     <div class="hero-copy hero-copy-catalog">
       <div class="hero-kicker-row">
         <span class="hero-badge">CGV · PHIM NỔI BẬT 2026</span>
-        <span class="hero-live-dot"><i></i> CẬP NHẬT PHIM MỚI</span>
+        <span class="hero-live-dot" id="catalogSync"><i></i> ĐANG ĐỒNG BỘ PHIM</span>
       </div>
       <p class="hero-date">${today}</p>
       <h1>HẸN NHAU<br><span>Ở RẠP.</span></h1>
@@ -308,12 +310,12 @@ document.querySelector('#app').innerHTML = `
         <a class="btn btn-ghost" href="#vietnam">PHIM VIỆT 2026</a>
       </div>
       <div class="hero-stats hero-stats-2026">
-        <div><strong>${allMovies.length}</strong><span>Tựa phim nổi bật</span></div>
-        <div><strong>${vnMovieCount}</strong><span>Phim Việt 2026</span></div>
+        <div><strong id="homeMovieCount">${allMovies.length}</strong><span>Tựa phim nổi bật</span></div>
+        <div><strong id="homeVnCount">${vnMovieCount}</strong><span>Phim Việt 2026</span></div>
         <div><strong>${theaters.length}</strong><span>Cụm rạp theo khu vực</span></div>
       </div>
     </div>
-    <div class="hero-poster-wall" aria-label="Poster phim nổi bật 2026">
+    <div class="hero-poster-wall" id="heroPosterWall" aria-label="Poster phim nổi bật 2026">
       ${[showing[0], showing[1], showing[5], showing[7]].map((m, i) => `
         <article class="hero-mini-poster p${i + 1}" data-detail="${m.title}">
           <img src="${m.image}" alt="Poster ${m.title}" onerror="this.onerror=null;this.src='${m.fallback || ''}'" />
@@ -346,9 +348,9 @@ document.querySelector('#app').innerHTML = `
   <div class="container">
     <div class="section-head">
       <div><span class="eyebrow">VIETNAMESE CINEMA · 2026</span><h2>PHIM VIỆT NỔI BẬT</h2><p class="section-intro">Từ hành động, gia đình đến kinh dị — các phim Việt 2026 được gom riêng để dễ theo dõi.</p></div>
-      <span class="see-all">${vnMovieCount} phim Việt nổi bật</span>
+      <span class="see-all" id="homeVnLabel">${vnMovieCount} phim Việt nổi bật</span>
     </div>
-    <div class="grid vietnam-grid">
+    <div class="grid vietnam-grid" id="vietnamMovieGrid">
       ${vietnameseMovies.slice(0, 8).map((m) => movieCard(m, { btn: showing.includes(m), detailOnly: !showing.includes(m), player: !showing.includes(m) })).join('')}
     </div>
   </div>
@@ -360,7 +362,7 @@ document.querySelector('#app').innerHTML = `
       <div><span class="eyebrow">COMING SOON · 2026</span><h2>PHIM SẮP CHIẾU</h2><p class="section-intro">Các phim có ngày phát hành đã được công bố; nội dung chưa công bố sẽ được ghi rõ là đang cập nhật.</p></div>
       <a href="#" class="see-all">Xem tất cả</a>
     </div>
-    <div class="grid grid-4 coming-grid">
+    <div class="grid grid-4 coming-grid" id="comingMovieGrid">
       ${comingSoon.map((m) => movieCard(m, { player: true, detailOnly: true })).join('')}
     </div>
   </div>
@@ -1114,3 +1116,93 @@ document.addEventListener('click', (e) => {
   const adminAction = e.target.closest('[data-admin-demo-action]')
   if (adminAction) window.alert(`${adminAction.dataset.adminDemoAction}: chức năng minh họa trong prototype.`)
 })
+
+// Đồng bộ thư viện phim trên trang chủ với json-server của trang quản lý.
+const cleanCatalogText = (value, fallback = '') => String(value ?? fallback).replace(/[<>"']/g, '').trim()
+const safeCatalogPoster = (value, fallback = '') => {
+  try {
+    const url = new URL(value || fallback, window.location.origin)
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : fallback
+  } catch { return fallback }
+}
+const formatCatalogDate = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : 'Đang cập nhật'
+}
+const apiMovieToCatalogMovie = (movie) => {
+  const base = seedMoviesById[String(movie.id)] || allMovies.find((item) => item.title === movie.title) || {}
+  const status = ['showing', 'upcoming', 'archived'].includes(movie.status) ? movie.status : 'upcoming'
+  const duration = Math.max(1, Number(movie.duration) || 120)
+  const category = cleanCatalogText(movie.genre, 'Đang cập nhật')
+  const release = formatCatalogDate(movie.releaseDate)
+  return {
+    ...base,
+    id: String(movie.id),
+    title: cleanCatalogText(movie.title, 'Phim chưa đặt tên'),
+    director: cleanCatalogText(movie.director, 'Đang cập nhật'),
+    meta: `${category} · ${duration} phút`,
+    genre: cleanCatalogText(movie.rating, 'P'),
+    country: cleanCatalogText(movie.country, base.country || 'Việt Nam'),
+    origin: movie.origin === 'intl' || base.origin === 'intl' ? 'intl' : 'vn',
+    short: cleanCatalogText(movie.description, 'Thông tin nội dung đang được cập nhật.'),
+    image: safeCatalogPoster(movie.poster, base.image || ''),
+    fallback: base.fallback || officialPosterFallback,
+    color: base.color || 'linear-gradient(165deg,#17243b 0%,#09111f 55%,#030712 100%)',
+    badge: base.badge || (status === 'showing' ? 'ĐANG CHIẾU' : 'SẮP CHIẾU'),
+    year: cleanCatalogText(movie.releaseDate?.slice(0, 4), '2026'),
+    date: status === 'upcoming' ? release.slice(0, 5) : undefined,
+    releaseDate: movie.releaseDate,
+    status,
+    times: status === 'showing' ? (base.times || ['10:00', '12:30', '15:00', '17:30', '20:00']) : [],
+  }
+}
+
+const renderSyncedCatalog = (managedMovies) => {
+  const synced = managedMovies.map(apiMovieToCatalogMovie).filter((movie) => movie.status !== 'archived')
+  const syncedShowing = synced.filter((movie) => movie.status === 'showing')
+  const syncedComing = synced.filter((movie) => movie.status === 'upcoming')
+  const syncedVietnamese = synced.filter((movie) => movie.origin === 'vn')
+
+  showing.splice(0, showing.length, ...syncedShowing)
+  comingSoon.splice(0, comingSoon.length, ...syncedComing)
+  allMovies.splice(0, allMovies.length, ...synced)
+  vietnameseMovies.splice(0, vietnameseMovies.length, ...syncedVietnamese)
+
+  document.querySelector('#movieGrid2026').innerHTML = showing.map((movie) => movieCard(movie, { btn: true })).join('') || '<p class="empty-showtimes">Chưa có phim đang chiếu.</p>'
+  document.querySelector('#vietnamMovieGrid').innerHTML = vietnameseMovies.slice(0, 8).map((movie) => movieCard(movie, { btn: movie.status === 'showing', detailOnly: movie.status !== 'showing', player: movie.status !== 'showing' })).join('') || '<p class="empty-showtimes">Chưa có phim Việt trong thư viện.</p>'
+  document.querySelector('#comingMovieGrid').innerHTML = comingSoon.map((movie) => movieCard(movie, { player: true, detailOnly: true })).join('') || '<p class="empty-showtimes">Chưa có phim sắp chiếu.</p>'
+
+  const featured = [...showing, ...comingSoon].slice(0, 4)
+  document.querySelector('#heroPosterWall').innerHTML = featured.map((movie, index) => `
+    <article class="hero-mini-poster p${index + 1}" data-detail="${movie.title}">
+      <img src="${movie.image || movie.fallback}" alt="Poster ${movie.title}" onerror="this.onerror=null;this.src='${movie.fallback || ''}'" />
+      <div class="hero-mini-shade"></div>
+      <div class="hero-mini-copy"><span>${movie.origin === 'vn' ? 'PHIM VIỆT' : movie.country}</span><strong>${movie.title}</strong></div>
+    </article>`).join('')
+
+  document.querySelector('#homeMovieCount').textContent = synced.length
+  document.querySelector('#homeVnCount').textContent = syncedVietnamese.length
+  document.querySelector('#homeVnLabel').textContent = `${syncedVietnamese.length} phim Việt nổi bật`
+}
+
+let catalogSnapshot = ''
+const syncHomepageCatalog = async () => {
+  const syncLabel = document.querySelector('#catalogSync')
+  try {
+    const response = await fetch('/api/movies')
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const managedMovies = await response.json()
+    const nextSnapshot = JSON.stringify(managedMovies)
+    if (nextSnapshot !== catalogSnapshot) {
+      renderSyncedCatalog(managedMovies)
+      catalogSnapshot = nextSnapshot
+    }
+    syncLabel.innerHTML = '<i></i> ĐÃ ĐỒNG BỘ VỚI QUẢN LÝ PHIM'
+  } catch {
+    syncLabel.innerHTML = '<i></i> ĐANG DÙNG DỮ LIỆU DỰ PHÒNG'
+    syncLabel.title = 'Không kết nối được json-server. Chạy npm run dev để đồng bộ dữ liệu.'
+  }
+}
+
+syncHomepageCatalog()
+window.addEventListener('focus', syncHomepageCatalog)
