@@ -3,6 +3,7 @@ import { icons } from './ui/icons.js'
 import { showing, comingSoon, news, theaters, regionLabels, allMovies, seedMoviesById, currentMovieCount, vnMovieCount, intlMovieCount, vietnameseMovies, showtimes, datePlans, upcomingShowtimes, officialPosterFallback } from './data/home-catalog.js'
 import { mountUserNav } from './shared/user-nav.js'
 import { getCachedUser, isAuthenticated, loginUrl } from './shared/auth.js'
+import { apiUrl } from './shared/api.js'
 import { setAdminSession, isAdminAuthenticated } from './shared/admin-auth.js'
 import { getMovieDetail, renderUpcomingShowtimes, movieCard, renderShowtimes, theaterOptions, totalTodayShows } from './ui/home-components.js'
 
@@ -875,7 +876,7 @@ const syncHomepageCatalog = async () => {
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 1500)
-    const response = await fetch('/api/movies', { signal: controller.signal })
+    const response = await fetch(apiUrl('/movies'), { signal: controller.signal })
     clearTimeout(timer)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const managedMovies = await response.json()

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cgv-cinemas-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run api
+    healthCheckPath: /movies
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true

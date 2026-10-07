@@ -1,9 +1,19 @@
+import { apiUrl } from './api.js'
+
 const TOKEN_KEY = 'cgv_auth_token_v1'
 const USER_KEY = 'cgv_auth_user_v1'
 
 const parseJson = (value, fallback = null) => {
   try { return JSON.parse(value) } catch { return fallback }
 }
+
+const normalizeUser = user => user ? {
+  id: user.id,
+  name: user.name || user.fullName || '',
+  email: user.email || '',
+  role: user.role || 'customer',
+  createdAt: user.createdAt || '',
+} : null
 
 export function getToken(){ return localStorage.getItem(TOKEN_KEY) || '' }
 export function getCachedUser(){ return parseJson(localStorage.getItem(USER_KEY), null) }
@@ -31,7 +41,7 @@ export function isAuthenticated(){
 export function setSession(accessToken, user = null){
   localStorage.setItem(TOKEN_KEY, accessToken)
   const payload = decodeToken(accessToken)
-  const merged = user || { id: payload?.sub, email: payload?.email }
+  const merged = normalizeUser(user) || { id: payload?.sub, name: '', email: payload?.email || '', role: 'customer', createdAt: '' }
   if(merged) {
     localStorage.setItem(USER_KEY, JSON.stringify(merged))
     try {
@@ -59,14 +69,19 @@ export function authHeaders(extra = {}){
 }
 
 async function authRequest(path, options = {}){
-  const response = await fetch(`/api${path}`, {
-    ...options,
-    headers: authHeaders(options.headers || {}),
-  })
+  let response
+  try {
+    response = await fetch(apiUrl(path), {
+      ...options,
+      headers: authHeaders(options.headers || {}),
+    })
+  } catch {
+    throw new Error('Không kết nối được máy chủ. Vui lòng thử lại sau.')
+  }
   let data = null
   try { data = await response.json() } catch {}
   if(!response.ok){
-    const message = data?.message || data?.error || (response.status === 400 ? 'Thông tin chưa hợp lệ.' : 'Không thể xử lý yêu cầu.')
+    const message = (typeof data === 'string' ? data : data?.message || data?.error) || (response.status === 400 ? 'Thông tin chưa hợp lệ.' : 'Không thể xử lý yêu cầu.')
     throw new Error(message)
   }
   return data
@@ -75,7 +90,7 @@ async function authRequest(path, options = {}){
 export async function registerUser({ name, email, password }){
   const result = await authRequest('/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email: email.trim().toLowerCase(), password, role: 'user', createdAt: new Date().toISOString() }),
+    body: JSON.stringify({ name, fullName: name, email: email.trim().toLowerCase(), password, role: 'customer', createdAt: new Date().toISOString() }),
   })
   if(!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
   const user = setSession(result.accessToken, result.user || null)
@@ -97,8 +112,14 @@ export async function refreshCurrentUser(){
   const payload = decodeToken()
   if(!payload?.sub) return getCachedUser()
   try{
-    const user = await authRequest(`/users/${payload.sub}`)
-    const safe = { id: user.id, name: user.name || '', email: user.email || '', role: user.role || 'user', createdAt: user.createdAt || '' }
+    let user
+    try {
+      const me = await authRequest('/me')
+      user = me?.user || me
+    } catch {
+      user = await authRequest(`/users/${payload.sub}`)
+    }
+    const safe = normalizeUser(user)
     localStorage.setItem(USER_KEY, JSON.stringify(safe))
     window.dispatchEvent(new CustomEvent('cgv-auth-change'))
     return safe
