@@ -1,0 +1,18 @@
+CGV WEB - HƯỚNG DẪN CHẠY
+
+1. Cài Node.js 18 trở lên.
+2. Giải nén project vào một thư mục mới.
+3. Windows: chạy CHAY_WEB.bat.
+   Hoặc Terminal:
+      npm install
+      npm run dev
+4. Mở: http://127.0.0.1:5173/trangchu.html
+
+TÀI KHOẢN NGƯỜI DÙNG
+- Đăng ký: http://127.0.0.1:5173/dang-ky.html
+- Đăng nhập: http://127.0.0.1:5173/dang-nhap.html
+- Tài khoản: http://127.0.0.1:5173/tai-khoan.html
+- Vé của tôi yêu cầu người dùng đăng nhập.
+
+API/Auth chạy ở http://127.0.0.1:3001 bằng json-server + json-server-auth.
+Lần đầu cần Internet để npm install các package.

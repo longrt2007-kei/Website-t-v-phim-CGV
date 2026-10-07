@@ -1,0 +1,32 @@
+CGV WEB - CÁC LỖI ĐÃ SỬA
+=========================
+
+1. SỬA LỖI TRANG CHỦ CHỈ HIỆN NỀN ĐEN
+- Nguyên nhân: code tạo lịch 4 ngày theo ngày hiện tại nhưng lại truy cập cố định upcomingShowtimes['28/09'].
+- Khi ngày 28/09 không còn trong dữ liệu, JavaScript phát sinh lỗi trước khi render #app.
+- Đã đổi toàn bộ giá trị mặc định sang datePlans[0][0] (ngày đầu tiên được sinh động).
+
+2. SỬA LỖI "Cannot access 'storageGet' before initialization"
+- Admin dashboard được render trong template trang chủ và gọi storageGet() trước khi const storageGet được khai báo.
+- ticketPrice cũng được dùng trước khi khai báo.
+- Đã chuyển storageGet, storageSet và ticketPrice lên trước phần render HTML.
+
+3. SỬA LỖI ĐỒNG BỘ API SAU KHI TẢI TRANG
+- apiMovieToCatalogMovie dùng officialPosterFallback nhưng trangchu.js chưa import biến này sau khi refactor.
+- Đã import đúng từ src/data/home-catalog.js.
+
+4. KIỂM TRA
+- Toàn bộ file JavaScript: syntax OK.
+- db.json: JSON hợp lệ.
+- Không có đường dẫn JS/CSS/HTML nội bộ bị thiếu.
+- Kiểm tra runtime trang chủ với API lỗi: OK.
+- Kiểm tra runtime trang chủ với API thành công: OK.
+
+CHẠY WEB
+- Windows: nhấp đúp CHAY_WEB.bat
+hoặc:
+  npm install
+  npm run dev
+
+Trang chủ:
+http://127.0.0.1:5173/trangchu.html

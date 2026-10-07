@@ -1,0 +1,28 @@
+CẬP NHẬT AUTH + POSTER THẬT
+
+1. TÀI KHOẢN NGƯỜI DÙNG
+- Thêm json-server-auth 2.1.0 vào package.json.
+- server.cjs chạy JSON Server + Auth middleware.
+- db.json có collection users.
+- Đăng ký: dang-ky.html + src/dang-ky.js.
+- Đăng nhập: dang-nhap.html + src/dang-nhap.js.
+- Tài khoản: tai-khoan.html + src/tai-khoan.js.
+- Module dùng chung: src/shared/auth.js, src/shared/user-nav.js.
+- Có đăng xuất, kiểm tra JWT hết hạn, redirect về trang đang xem sau đăng nhập.
+- Vé của tôi bắt buộc đăng nhập.
+- Vé mới được gắn userId/userEmail và chỉ hiện cho đúng tài khoản.
+- Collection users được bảo vệ quyền 600: người dùng chỉ đọc/sửa hồ sơ của chính mình.
+
+2. POSTER
+- Xóa việc dùng poster SVG minh họa trong dữ liệu phim.
+- Cập nhật poster/artwork thật cho toàn bộ 18 phim.
+- 3 poster được lưu local để tải ổn định; các poster còn lại dùng nguồn ảnh thật có fallback.
+- Thay phim dữ liệu mẫu “Sắc Màu Ký Ức” bằng Avengers: Doomsday vì phim mẫu cũ không có poster chính thức.
+- Sửa một số ngày phát hành đã bị đặt đồng loạt 25/09 trong dữ liệu cũ.
+- Bump cache phim lên v2 để trình duyệt không giữ poster cũ.
+
+3. CHẠY
+npm install
+npm run dev
+
+Hoặc chạy CHAY_WEB.bat. File này sẽ tự npm install nếu thiếu json-server-auth.

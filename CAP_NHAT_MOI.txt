@@ -1,0 +1,17 @@
+CGV WEB - BẢN TỐI ƯU
+
+Đã chỉnh:
+- Trang Vé của tôi chuyển hoàn toàn sang giao diện tối đồng bộ toàn website.
+- Có tìm vé, sao chép mã vé, xóa lịch sử vé và in danh sách vé.
+- Khi xóa vé, ghế tương ứng được giải phóng khỏi dữ liệu ghế trên thiết bị.
+- Bỏ các dòng trạng thái kỹ thuật như “đã đồng bộ với quản lý phim”.
+- Dọn các chữ Prototype/Demo/LocalStorage khỏi giao diện người dùng chính.
+- Poster chuyển sang file cục bộ để không phải chờ ảnh từ website ngoài.
+- Cache danh sách phim, có timeout API để giao diện không bị chờ lâu.
+- Bỏ Google Fonts online trên các trang con để tải nhanh hơn.
+- Ảnh phim sử dụng lazy loading.
+- Bổ sung thư viện lên 18 phim.
+- Trang Phim có thêm: lọc thể loại, tìm kiếm, yêu thích, đặt vé nhanh.
+- Trang Lịch chiếu tăng lên 7 ngày và sử dụng cache phim.
+- Các luồng modal đặt vé/chọn ghế được đồng bộ giao diện tối.
+- Các nút vận hành nhanh trong Admin dẫn sang trang quản trị thật thay vì alert mô phỏng.
