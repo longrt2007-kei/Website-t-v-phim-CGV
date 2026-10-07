@@ -43,6 +43,10 @@ app.db = router.db
 app.use(middlewares)
 app.use(jsonServer.bodyParser)
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' })
+})
+
 app.use((req, res, next) => {
   if (req.method === 'POST' && ['/register', '/signup'].includes(req.path.toLowerCase())) {
     req.body.role = 'customer'
