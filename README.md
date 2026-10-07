@@ -41,6 +41,14 @@ Dữ liệu người dùng được lưu trong collection `users` của `db.json
 - `admin-rap.html`: quản lý rạp.
 - `admin-suat-chieu.html`: quản lý suất chiếu.
 - `admin-ve.html`: quản lý vé.
+- `admin-login.html`: đăng nhập quản trị bằng tài khoản có quyền `admin`.
+
+Tài khoản quản trị mẫu:
+
+```text
+Email: admin@cgv.vn
+Mật khẩu: Admin@123
+```
 
 ## Poster
 

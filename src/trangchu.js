@@ -4,7 +4,6 @@ import { showing, comingSoon, news, theaters, regionLabels, allMovies, seedMovie
 import { mountUserNav } from './shared/user-nav.js'
 import { getCachedUser, isAuthenticated, loginUrl } from './shared/auth.js'
 import { apiUrl } from './shared/api.js'
-import { setAdminSession, isAdminAuthenticated } from './shared/admin-auth.js'
 import { getMovieDetail, renderUpcomingShowtimes, movieCard, renderShowtimes, theaterOptions, totalTodayShows } from './ui/home-components.js'
 
 const now = new Date()
@@ -35,7 +34,7 @@ document.querySelector('#app').innerHTML = `
     <div class="header-actions">
       <button type="button" class="icon-btn" id="searchOpen" aria-label="Tìm kiếm">${icons.search}</button>
       <a class="login-btn ticket-history-btn" href="/ve-cua-toi.html">${icons.ticket}<span>VÉ CỦA TÔI</span></a>
-      <button type="button" class="login-btn" id="adminLoginOpen">${icons.user}<span>ADMIN</span></button>
+      <a class="login-btn" href="/admin-login.html">${icons.user}<span>ADMIN</span></a>
     </div>
   </div>
 </header>
@@ -332,31 +331,11 @@ document.querySelector('#app').innerHTML = `
   </div>
 </div>
 
-<div class="modal" id="adminLoginModal" hidden>
-  <div class="modal-backdrop" data-admin-close></div>
-  <div class="modal-box admin-login-box">
-    <button type="button" class="modal-close" data-admin-close aria-label="Đóng">${icons.close}</button>
-    <div class="admin-login-head">
-      <span class="admin-login-icon">${icons.lock}</span>
-      <div><span class="admin-kicker">KHU VỰC QUẢN TRỊ</span><h3>Đăng nhập Admin</h3></div>
-    </div>
-    <form class="admin-login-form" id="adminLoginForm">
-      <label>Tài khoản<input id="adminUsername" type="text" autocomplete="username" placeholder="Nhập tài khoản" required /></label>
-      <label>Mật khẩu<input id="adminPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required /></label>
-      <p class="admin-error" id="adminLoginError" aria-live="polite"></p>
-      <button type="submit" class="btn btn-primary admin-submit">${icons.lock}<span>ĐĂNG NHẬP</span></button>
-      <p class="admin-demo-note">Đăng nhập để quản lý nội dung và vận hành hệ thống.</p>
-    </form>
-  </div>
-</div>
-
 <button type="button" class="to-top" id="toTop" aria-label="Lên đầu trang"></button>
 `
 
 const state = { modalMode: 'buy' }
 mountUserNav()
-
-const ADMIN_CREDENTIALS = { username: 'cgvteam', password: '66668888' }
 
 const PAYMENT_BANK = 'BIDV'
 const PAYMENT_ACCOUNT = '8855252740'
@@ -629,49 +608,6 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) closeModal()
 })
 
-
-// ---------- Admin login ----------
-const adminLoginOpen = document.querySelector('#adminLoginOpen')
-const adminLoginModal = document.querySelector('#adminLoginModal')
-const adminLoginForm = document.querySelector('#adminLoginForm')
-const adminUsername = document.querySelector('#adminUsername')
-const adminPassword = document.querySelector('#adminPassword')
-const adminLoginError = document.querySelector('#adminLoginError')
-
-const openAdminLogin = () => {
-  adminLoginError.textContent = ''
-  adminLoginModal.hidden = false
-  document.body.style.overflow = 'hidden'
-  setTimeout(() => adminUsername.focus(), 50)
-}
-const closeAdminLogin = () => {
-  adminLoginModal.hidden = true
-  document.body.style.overflow = ''
-}
-
-adminLoginOpen?.addEventListener('click', () => {
-  if (isAdminAuthenticated()) {
-    location.href = '/admin-phim.html'
-    return
-  }
-  openAdminLogin()
-})
-document.querySelectorAll('[data-admin-close]').forEach((el) => el.addEventListener('click', closeAdminLogin))
-
-adminLoginForm?.addEventListener('submit', (e) => {
-  e.preventDefault()
-  const user = adminUsername.value.trim()
-  const pass = adminPassword.value
-  if (user === 'cgvteam' && pass === '66668888') {
-    setAdminSession(user)
-    adminLoginForm.reset()
-    adminLoginError.textContent = ''
-    location.href = '/admin-phim.html'
-  } else {
-    adminLoginError.textContent = 'Tài khoản hoặc mật khẩu chưa đúng.'
-    adminPassword.select()
-  }
-})
 
 let activeRegion = 'north'
 let activeTheater = theaters.find((t) => t.region === activeRegion)?.id || theaters[0].id

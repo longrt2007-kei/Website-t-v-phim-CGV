@@ -5,9 +5,10 @@ export const API_BASE_URL = configuredApiUrl || (import.meta.env.PROD ? producti
 export const apiUrl = path => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
 
 export async function apiRequest(resource, path = '', options = {}) {
+  const adminToken = localStorage.getItem('cgv_admin_token_v1') || ''
   const response = await fetch(apiUrl(`/${resource}${path}`), {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}), ...options.headers },
   })
   if (!response.ok) throw new Error(`Yêu cầu thất bại (${response.status}).`)
   return response.status === 204 ? null : response.json()

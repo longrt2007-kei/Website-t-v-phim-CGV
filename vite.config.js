@@ -27,6 +27,7 @@ export default defineConfig({
         lichchieu: resolve(__dirname, 'lichchieu.html'),
         veCuaToi: resolve(__dirname, 've-cua-toi.html'),
         admin: resolve(__dirname, 'admin.html'),
+        adminLogin: resolve(__dirname, 'admin-login.html'),
         adminPhim: resolve(__dirname, 'admin-phim.html'),
         adminRap: resolve(__dirname, 'admin-rap.html'),
         adminSuatChieu: resolve(__dirname, 'admin-suat-chieu.html'),

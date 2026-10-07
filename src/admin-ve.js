@@ -2,6 +2,9 @@ import './admin.css'
 import { adminNav } from './shared/admin-nav.js'
 import { getBookings, saveBookings, releaseBookingSeats, money, formatDateTime } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
+import { requireAdmin } from './shared/admin-auth.js'
+
+if (!requireAdmin()) throw new Error('Admin authentication required')
 
 let tickets = getBookings()
 const app = document.querySelector('#app')

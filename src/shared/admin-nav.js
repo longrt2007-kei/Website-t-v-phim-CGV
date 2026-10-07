@@ -1,6 +1,7 @@
-import { clearAdminSession, requireAdmin } from './admin-auth.js'
+import { clearAdminSession, getAdminUser } from './admin-auth.js'
 
 export function adminNav(active){
+  const admin = getAdminUser()
   const items=[
     ['movies','/admin-phim.html','▣','Quản lý phim'],
     ['theaters','/admin-rap.html','⌂','Quản lý rạp'],
@@ -15,16 +16,12 @@ export function adminNav(active){
       <a class="nav-item" href="/trangchu.html">↗ &nbsp; Trang đặt vé</a>
       <button type="button" class="nav-item admin-logout-link" id="adminLogoutNav">↪ &nbsp; Đăng xuất</button>
     </div>
-    <div class="sidebar-bottom"><strong>CGV Cinema Studio</strong>Quản trị nội dung và vận hành<br>Hệ thống quản trị · 2026</div>
+    <div class="sidebar-bottom"><strong>${admin?.name || 'CGV Cinema Studio'}</strong>${admin?.email || 'Quản trị nội dung và vận hành'}<br>Hệ thống quản trị · 2026</div>
   </aside>`
 }
 
-if (!requireAdmin()) {
-  // Redirect handled by requireAdmin.
-} else {
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#adminLogoutNav')) return
-    clearAdminSession()
-    location.href = '/trangchu.html'
-  })
-}
+document.addEventListener('click', event => {
+  if (!event.target.closest('#adminLogoutNav')) return
+  clearAdminSession()
+  location.href = '/admin-login.html'
+})

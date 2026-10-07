@@ -1,7 +1,10 @@
 import './admin.css'
 import './admin-dark.css'
 import { adminNav } from './shared/admin-nav.js'
-import { apiUrl } from './shared/api.js'
+import { apiRequest } from './shared/api.js'
+import { requireAdmin } from './shared/admin-auth.js'
+
+if (!requireAdmin()) throw new Error('Admin authentication required')
 
 const statuses = { showing: 'Đang chiếu', upcoming: 'Sắp chiếu', archived: 'Ngừng chiếu' }
 const genres = ['Hành động', 'Tâm lý', 'Kinh dị', 'Hài', 'Gia đình', 'Hoạt hình', 'Khoa học viễn tưởng', 'Khác']
@@ -30,9 +33,7 @@ ${adminNav('movies')}
 
 const $ = selector => document.querySelector(selector)
 async function request(path = '', options = {}) {
-  const response = await fetch(apiUrl(`/movies${path}`), { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } })
-  if (!response.ok) throw new Error(`Không thể xử lý yêu cầu (${response.status}). Vui lòng thử lại.`)
-  return response.status === 204 ? null : response.json()
+  return apiRequest('movies', path, options)
 }
 function filtered() {
   const query = normalize($('#search').value.trim())
