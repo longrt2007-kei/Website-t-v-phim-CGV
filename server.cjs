@@ -14,7 +14,8 @@ app.use(auth.rewriter({ users: 600 }))
 app.use(auth)
 app.use(router)
 
-const PORT = 3001
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`Auth API running at http://127.0.0.1:${PORT}`)
+const PORT = Number(process.env.PORT) || 3001
+const HOST = process.env.HOST || '0.0.0.0'
+app.listen(PORT, HOST, () => {
+  console.log(`Auth API running at http://${HOST}:${PORT}`)
 })
