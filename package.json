@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "node server.cjs",
     "dev": "concurrently -k -n API,WEB -c yellow,cyan \"npm:api\" \"npm:web\"",
     "api": "node server.cjs",
     "web": "vite",
