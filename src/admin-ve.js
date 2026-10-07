@@ -1,10 +1,12 @@
 import './admin.css'
 import { adminNav } from './shared/admin-nav.js'
 import { getBookings, saveBookings, releaseBookingSeats, money, formatDateTime } from './shared/booking-storage.js'
+import { theaters } from './data/home-catalog.js'
 
 let tickets = getBookings()
 const app = document.querySelector('#app')
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+const theaterName = ticket => ticket.theaterName || theaters.find(theater => String(theater.id) === String(ticket.theaterId))?.name || ticket.theaterId || '—'
 
 app.innerHTML = `
 ${adminNav('tickets')}
@@ -19,7 +21,7 @@ ${adminNav('tickets')}
 const $ = s => document.querySelector(s)
 function filtered(){
   const q=$('#search').value.trim().toLowerCase(), st=$('#status').value
-  const rows=tickets.filter(t=>(!q || `${t.code} ${t.movie} ${t.theaterId} ${t.date} ${t.time} ${(t.seats||[]).join(' ')}`.toLowerCase().includes(q)) && (!st || (t.paymentStatus||'Đã thanh toán')===st))
+  const rows=tickets.filter(t=>(!q || `${t.code} ${t.movie} ${theaterName(t)} ${t.date} ${t.time} ${(t.seats||[]).join(' ')}`.toLowerCase().includes(q)) && (!st || (t.paymentStatus||'Đã thanh toán')===st))
   return rows.sort((a,b)=>$('#sort').value==='old' ? String(a.createdAt).localeCompare(String(b.createdAt)) : $('#sort').value==='amount' ? Number(b.amount||0)-Number(a.amount||0) : String(b.createdAt).localeCompare(String(a.createdAt)))
 }
 function render(){
@@ -30,7 +32,7 @@ function render(){
     ['Tổng số vé',tickets.length,'Tất cả đơn đặt vé'],['Đã thanh toán',paid.length,'Vé đã xác nhận'],['Tổng ghế',tickets.reduce((s,t)=>s+(t.seats||[]).length,0),'Số ghế đã đặt'],['Doanh thu',money(revenue),'Theo vé đã thanh toán']
   ].map(([a,b,c])=>`<article class="stat"><span>${a}</span><strong>${b}</strong><small>${c}</small></article>`).join('')
   const rows=filtered(); $('#count').textContent=`(${rows.length})`; $('#empty').hidden=rows.length>0
-  $('#rows').innerHTML=rows.map(t=>`<tr><td><strong>${esc(t.code)}</strong></td><td><strong>${esc(t.movie)}</strong></td><td>${esc(t.theaterName||t.theaterId||'—')}<br><small>${esc(t.date)} · ${esc(t.time)}</small></td><td>${esc((t.seats||[]).join(', '))}</td><td><select class="ticket-status" data-code="${esc(t.code)}"><option ${status(t,'Đã thanh toán')}>Đã thanh toán</option><option ${status(t,'Chờ xác nhận')}>Chờ xác nhận</option><option ${status(t,'Đã hoàn tiền')}>Đã hoàn tiền</option><option ${status(t,'Đã hủy')}>Đã hủy</option></select><br><small>${esc(t.paymentMethod||'QR BIDV')} · ${esc(t.paymentAccount||'8855252740')}</small></td><td><strong>${money(t.amount||((t.seats||[]).length*85000))}</strong></td><td>${formatDateTime(t.createdAt)}</td><td><div class="actions"><button class="icon-button delete" data-delete="${esc(t.code)}">Xóa vé</button></div></td></tr>`).join('')
+  $('#rows').innerHTML=rows.map(t=>`<tr><td><strong>${esc(t.code)}</strong></td><td><strong>${esc(t.movie)}</strong></td><td>${esc(theaterName(t))}<br><small>${esc(t.date)} · ${esc(t.time)}</small></td><td>${esc((t.seats||[]).join(', '))}</td><td><select class="ticket-status" data-code="${esc(t.code)}"><option ${status(t,'Đã thanh toán')}>Đã thanh toán</option><option ${status(t,'Chờ xác nhận')}>Chờ xác nhận</option><option ${status(t,'Đã hoàn tiền')}>Đã hoàn tiền</option><option ${status(t,'Đã hủy')}>Đã hủy</option></select><br><small>${esc(t.paymentMethod||'QR BIDV')} · ${esc(t.paymentAccount||'8855252740')}</small></td><td><strong>${money(t.amount||((t.seats||[]).length*85000))}</strong></td><td>${formatDateTime(t.createdAt)}</td><td><div class="actions"><button class="icon-button delete" data-delete="${esc(t.code)}">Xóa vé</button></div></td></tr>`).join('')
 }
 function status(ticket,value){ return (ticket.paymentStatus||'Đã thanh toán')===value?'selected':'' }
 $('#search').addEventListener('input',render); $('#status').addEventListener('change',render); $('#sort').addEventListener('change',render)

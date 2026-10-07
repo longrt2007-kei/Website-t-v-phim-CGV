@@ -2,7 +2,7 @@ import './styles/home.css'
 import { icons } from './ui/icons.js'
 import { showing, comingSoon, news, theaters, regionLabels, allMovies, seedMoviesById, currentMovieCount, vnMovieCount, intlMovieCount, vietnameseMovies, showtimes, datePlans, upcomingShowtimes, officialPosterFallback } from './data/home-catalog.js'
 import { mountUserNav } from './shared/user-nav.js'
-import { getCachedUser } from './shared/auth.js'
+import { getCachedUser, isAuthenticated, loginUrl } from './shared/auth.js'
 import { setAdminSession, isAdminAuthenticated } from './shared/admin-auth.js'
 import { getMovieDetail, renderUpcomingShowtimes, movieCard, renderShowtimes, theaterOptions, totalTodayShows } from './ui/home-components.js'
 
@@ -448,7 +448,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
   document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
-    const booking = { code, userId: currentUser?.id || null, userEmail: currentUser?.email || '', movie: m.title, theaterId, date, time, seats, amount, paymentMethod: `QR ${PAYMENT_BANK}`, paymentAccount: PAYMENT_ACCOUNT, paymentStatus: 'Đã thanh toán', createdAt: new Date().toISOString() }
+    const booking = { code, userId: currentUser?.id || null, userEmail: currentUser?.email || '', movie: m.title, theaterId, theaterName: theater?.name || theaterId, date, time, seats, amount, paymentMethod: `QR ${PAYMENT_BANK}`, paymentAccount: PAYMENT_ACCOUNT, paymentStatus: 'Đã thanh toán', createdAt: new Date().toISOString() }
     bookings.unshift(booking)
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
