@@ -46,8 +46,8 @@ Dữ liệu người dùng được lưu trong collection `users` của `db.json
 Tài khoản quản trị mẫu:
 
 ```text
-Email: admin@cgv.vn
-Mật khẩu: Admin@123
+Tài khoản: cgvteam
+Mật khẩu: cấu hình bằng biến môi trường ADMIN_PASSWORD
 ```
 
 ## Poster

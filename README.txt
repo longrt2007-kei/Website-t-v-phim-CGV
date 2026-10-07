@@ -7,7 +7,7 @@ CÁCH MỞ NHANH:
 
 ADMIN DEMO:
 - Username: cgvteam
-- Password: 66668888
+- Password: cấu hình bằng biến môi trường ADMIN_PASSWORD
 
 LUỒNG USER:
 Trang chủ -> chọn phim -> chi tiết -> mua vé -> chọn rạp/ngày/giờ -> chọn ghế -> xác nhận -> xem vé ở “VÉ CỦA TÔI”.

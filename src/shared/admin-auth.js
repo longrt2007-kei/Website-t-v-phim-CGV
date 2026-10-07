@@ -46,14 +46,14 @@ const readResponse = async response => {
   return data
 }
 
-export async function loginAdmin(email, password){
+export async function loginAdmin(username, password){
   clearAdminSession()
   let response
   try {
     response = await fetch(apiUrl('/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      body: JSON.stringify({ email: `${username.trim().toLowerCase()}@admin.local`, password }),
     })
   } catch {
     throw new Error('Không kết nối được máy chủ. Vui lòng thử lại sau.')
@@ -71,7 +71,7 @@ export async function loginAdmin(email, password){
   if (user?.role !== 'admin') throw new Error('Tài khoản này không có quyền quản trị.')
 
   localStorage.setItem(ADMIN_TOKEN_KEY, token)
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify({ id: user.id, email: user.email, name: user.fullName || user.name || 'Quản trị viên', role: 'admin' }))
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify({ id: user.id, username: user.username || username.trim(), name: user.fullName || user.name || 'Quản trị viên', role: 'admin' }))
   return user
 }
 

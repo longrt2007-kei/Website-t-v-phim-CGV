@@ -17,7 +17,7 @@
 8. **Thông tin vé:** nút “VÉ CỦA TÔI” đọc danh sách vé đã lưu từ LocalStorage.
 
 ## Admin – mức cơ bản
-- Đăng nhập Admin demo: `cgvteam` / `66668888`.
+- Đăng nhập Admin demo bằng tài khoản `cgvteam`; mật khẩu được cấu hình qua biến môi trường `ADMIN_PASSWORD`.
 - Xem danh sách phim và thông tin rạp/phòng/suất chiếu.
 - Vận hành nhanh cho phim/rạp/lịch chiếu ở mức prototype.
 - Xem danh sách vé đã đặt và xóa vé trong LocalStorage.
