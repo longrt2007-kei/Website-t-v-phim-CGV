@@ -8,3 +8,13 @@ html{scroll-behavior:smooth}body{min-height:100vh;overflow-x:hidden}.catalog-car
 @media print{.simple-header,.ticket-tools,.ticket-footer-actions{display:none!important}body{background:#fff!important;color:#000!important}.ticket-page{padding:0}.ticket-card{break-inside:avoid;background:#fff!important;color:#000!important;border:1px solid #aaa!important;box-shadow:none!important}.ticket-card h2,.ticket-card dd{color:#000!important}.ticket-card p,.ticket-card small,.ticket-card dt{color:#444!important}}
 /* Member navigation */
 .simple-user-nav{display:inline-flex;align-items:center;gap:7px;margin-left:4px}.simple-nav .user-account-link,.simple-nav .user-logout-btn{border:1px solid #ffffff18;background:#101827;color:#e8edf6;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:750;text-decoration:none;white-space:nowrap}.simple-nav .user-logout-btn{cursor:pointer;color:#aeb8c9}.simple-nav .user-account-link:hover,.simple-nav .user-logout-btn:hover{border-color:#ffffff32;background:#172136}.catalog-card img{background:#0b1120}.catalog-card img[src=""]{visibility:hidden}@media(max-width:760px){.simple-user-nav{width:100%;justify-content:flex-start}.simple-nav .user-account-link,.simple-nav .user-logout-btn{font-size:11px;padding:7px 9px}}
+
+/* Ticket details use white text on the dark night background. */
+.ticket-card,
+.ticket-card h2,
+.ticket-card p,
+.ticket-card small,
+.ticket-card dt,
+.ticket-card dd {
+  color: #fff;
+}

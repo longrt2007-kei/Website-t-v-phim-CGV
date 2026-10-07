@@ -2089,3 +2089,22 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;op
 .movie-modal .modal-card,.modal-card{background:#0a111d!important;color:#eef2f7!important;border:1px solid #ffffff18!important}.mm-body,.movie-detail-body,.seat-flow-body,.ticket-success,.ticket-list{background:#0a111d!important;color:#eef2f7!important}.booking-selects label,.seat-flow-head p,.ticket-list-head p,.detail-source{color:#93a0b3!important}.booking-selects select{background:#0d1727!important;color:#fff!important;border-color:#ffffff1a!important}.screen-label{background:linear-gradient(180deg,#101b2b,#0b1421)!important;border-top-color:#e62a39!important;color:#cbd5e1!important}.seat{background:#101b2b!important;border-color:#ffffff1c!important;color:#dbe3ee!important}.seat.selected{background:#c72b2b!important;border-color:#c72b2b!important;color:#fff!important}.seat.occupied{background:#283344!important;color:#69778b!important;border-color:#283344!important}.seat-legend{color:#8f9daf!important}.seat-demo{background:#101b2b!important;border-color:#ffffff1c!important}.seat-demo.selected{background:#c72b2b!important;border-color:#c72b2b!important}.seat-demo.occupied{background:#283344!important;border-color:#283344!important}.seat-summary{border-color:#ffffff12!important}.ticket-code{background:#111d2d!important;border-color:#ffffff28!important;color:#ff6971!important}.ticket-grid>div,.saved-ticket{background:#101b2b!important;border-color:#ffffff12!important;color:#eef2f7!important}.ticket-grid span,.saved-ticket span{color:#8795a9!important}.detail-highlight,.detail-theater-box,.movie-facts>div{background:#0f1928!important;border-color:#ffffff12!important}
 /* Member account controls */
 .user-nav-wrap{display:inline-flex;align-items:center;gap:6px}.header-actions .user-account-link,.header-actions .user-logout-btn{height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:#fff;border-radius:999px;padding:0 12px;text-decoration:none;font-size:11px;font-weight:800;letter-spacing:.3px;white-space:nowrap}.header-actions .user-logout-btn{cursor:pointer;color:#b8c0d0}.header-actions .user-account-link:hover,.header-actions .user-logout-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}@media(max-width:980px){.user-nav-wrap{gap:4px}.header-actions .user-logout-btn{display:none}}
+
+/* Keep ticket text readable on the dark modal. */
+.ticket-success,
+.ticket-success h3,
+.ticket-success p,
+.ticket-success .detail-kicker,
+.ticket-success .detail-demo-note,
+.ticket-success .ticket-code,
+.ticket-success .ticket-grid span,
+.ticket-success .ticket-grid strong,
+.ticket-list-head,
+.ticket-list-head h3,
+.ticket-list-head p,
+.saved-ticket,
+.saved-ticket strong,
+.saved-ticket span,
+.saved-ticket .btn-details {
+  color: #fff !important;
+}
