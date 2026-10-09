@@ -9,9 +9,3 @@ services:
     envVars:
       - key: JWT_SECRET
         generateValue: true
-      - key: PUBLIC_URL
-        value: https://cgv-cinemas-api.onrender.com
-      - key: GMAIL_USER
-        sync: false
-      - key: GMAIL_APP_PASSWORD
-        sync: false

@@ -463,8 +463,6 @@ const PAYMENT_BANK = 'BIDV'
 const PAYMENT_ACCOUNT = '8855252740'
 const paymentQrUrl = (amount, content) =>
   `https://img.vietqr.io/image/${PAYMENT_BANK}-${PAYMENT_ACCOUNT}-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(content)}`
-const ticketQrUrl = (code) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(apiUrl(`/tickets/${code}`))}`
 const getScheduleRows = (theaterId, date) =>
   upcomingShowtimes[date]?.theaters?.[theaterId] || showtimes[theaterId] || []
 const getMovieTimes = (movieTitle, theaterId, date) =>
@@ -479,7 +477,6 @@ const renderTicket = (booking) => {
       <h3>${booking.movie}</h3>
       <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong>
     </p>
-      <div style="text-align:center;margin:16px"><img src="${ticketQrUrl(booking.code)}" alt="QR vé ${booking.code}" width="180" height="180"><p>Đưa mã QR này cho nhân viên quét tại rạp.</p></div>
       <div class="ticket-grid">
         <div>
     <span>Rạp</span>
@@ -615,17 +612,9 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
         <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
       </div>
     </div>`
-  document.querySelector('#paymentConfirmBtn').addEventListener('click', async (event) => {
-    const button = event.currentTarget
-    button.disabled = true
+  document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
-    if (!currentUser?.email) {
-      button.disabled = false
-      alert('Vui lòng đăng nhập tài khoản có email để nhận vé qua Gmail.')
-      location.href = loginUrl()
-      return
-    }
     const booking = {
       code,
       userId: currentUser?.id || null,
@@ -642,32 +631,11 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       paymentStatus: 'Đã thanh toán',
       createdAt: new Date().toISOString(),
     }
-    try {
-      const response = await fetch(apiUrl('/bookings'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(booking),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Không thể tạo vé. Vui lòng thử lại.')
-      Object.assign(booking, result.booking)
-      booking.emailSent = result.emailSent
-    } catch (error) {
-      button.disabled = false
-      alert(error.message || 'Không kết nối được máy chủ đặt vé.')
-      return
-    }
     bookings.unshift(booking)
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
     storageSet('cgv_seat_state_v1', occupiedMap)
     renderTicket(booking)
-    if (!booking.emailSent) {
-      const note = document.createElement('p')
-      note.className = 'detail-demo-note'
-      note.textContent = 'Vé đã được tạo, nhưng email chưa gửi được. Quản trị viên cần cấu hình Gmail SMTP trên máy chủ.'
-      document.querySelector('#modalContent .ticket-success')?.append(note)
-    }
   })
 }
 
