@@ -1,15 +1,106 @@
 import { mountUserNav } from './shared/user-nav.js'
 import './pages.css'
 import { apiUrl } from './shared/api.js'
-const theaters=[['cgv-ba-dinh','CGV Ba Đình'],['cgv-vincom','CGV Vincom Center'],['cgv-times-city','CGV Times City'],['cgv-aeon','CGV AEON Mall']]
-const timeSets=[['09:15','11:50','14:30','17:10','19:50'],['09:40','12:10','14:40','17:20','20:00'],['10:00','12:30','15:00','17:40','20:20','22:40'],['09:20','11:35','13:50','16:15','18:45','21:10']]
-const app=document.querySelector('#app'); let movies=[]
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-const today=new Date(); const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return [d.toLocaleDateString('vi-VN'),i===0?'Hôm nay':d.toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'})]})
-app.innerHTML=`<header class="simple-header"><div class="simple-nav"><a class="simple-logo" href="/trangchu.html">CGV</a><nav><a href="/trangchu.html">Trang chủ</a><a href="/phim.html">Phim</a><a class="active" href="/lichchieu.html">Lịch chiếu</a><a href="/ve-cua-toi.html">Vé của tôi</a></nav></div></header><main class="page-wrap"><div class="page-title"><span>SUẤT CHIẾU</span><h1>Lịch chiếu theo rạp</h1><p>Đổi rạp hoặc ngày để danh sách giờ chiếu cập nhật tương ứng.</p></div><div class="schedule-controls"><label>Rạp<select id="theater">${theaters.map(([id,n])=>`<option value="${id}">${n}</option>`).join('')}</select></label><label>Ngày<select id="day">${days.map(([v,n])=>`<option value="${v}">${n} · ${v}</option>`).join('')}</select></label></div><section class="schedule-list" id="list"></section></main>`
+const theaters = [
+  ['cgv-ba-dinh', 'CGV Ba Đình'],
+  ['cgv-vincom', 'CGV Vincom Center'],
+  ['cgv-times-city', 'CGV Times City'],
+  ['cgv-aeon', 'CGV AEON Mall'],
+]
+const timeSets = [
+  ['09:15', '11:50', '14:30', '17:10', '19:50'],
+  ['09:40', '12:10', '14:40', '17:20', '20:00'],
+  ['10:00', '12:30', '15:00', '17:40', '20:20', '22:40'],
+  ['09:20', '11:35', '13:50', '16:15', '18:45', '21:10'],
+]
+const app = document.querySelector('#app')
+let movies = []
+const esc = (s) =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  )
+const today = new Date()
+const days = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date(today)
+  d.setDate(d.getDate() + i)
+  return [
+    d.toLocaleDateString('vi-VN'),
+    i === 0
+      ? 'Hôm nay'
+      : d.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+  ]
+})
+app.innerHTML = `<header class="simple-header">
+  <div class="simple-nav">
+  <a class="simple-logo" href="/trangchu.html">CGV</a>
+  <nav>
+  <a href="/trangchu.html">Trang chủ</a>
+  <a href="/phim.html">Phim</a>
+  <a class="active" href="/lichchieu.html">Lịch chiếu</a>
+  <a href="/ve-cua-toi.html">Vé của tôi</a>
+  </nav>
+  </div>
+  </header>
+  <main class="page-wrap">
+  <div class="page-title">
+  <span>SUẤT CHIẾU</span>
+  <h1>Lịch chiếu theo rạp</h1>
+  <p>Đổi rạp hoặc ngày để danh sách giờ chiếu cập nhật tương ứng.</p>
+  </div>
+  <div class="schedule-controls">
+  <label>Rạp<select id="theater">${theaters.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
+  </label>
+  <label>Ngày<select id="day">${days.map(([v, n]) => `<option value="${v}">${n} · ${v}</option>`).join('')}</select>
+  </label>
+  </div>
+  <section class="schedule-list" id="list">
+  </section>
+  </main>`
 mountUserNav()
-const $=s=>document.querySelector(s)
-function hash(s){return [...s].reduce((a,c)=>a+c.charCodeAt(0),0)}
-function render(){const ti=theaters.findIndex(x=>x[0]===$('#theater').value),di=days.findIndex(x=>x[0]===$('#day').value);const showing=movies.filter(m=>m.status==='showing');$('#list').innerHTML=showing.length?showing.map((m,i)=>{const set=timeSets[(i+ti+di)%timeSets.length];const count=3+((hash(m.title)+ti+di)%3);const times=set.slice(0,count);return `<article class="schedule-row"><div><h2>${esc(m.title)}</h2><p>${esc(m.genre||'Phim')} · ${esc(m.duration||'—')} phút · ${esc(theaters[ti][1])}</p></div><div class="time-list">${times.map(t=>`<a href="/trangchu.html#showing" title="Đặt vé ${esc(m.title)} lúc ${t}">${t}</a>`).join('')}</div></article>`}).join(''):`<div class="empty-page">Chưa có phim đang chiếu.</div>`}
-async function load(){const cached=localStorage.getItem('cgv_movie_cache_v2');if(cached){try{movies=JSON.parse(cached);render()}catch{}}try{const ctl=new AbortController();setTimeout(()=>ctl.abort(),1800);const r=await fetch(apiUrl('/movies'),{signal:ctl.signal});if(!r.ok)throw 0;movies=await r.json();localStorage.setItem('cgv_movie_cache_v2',JSON.stringify(movies))}catch{}render()}
-$('#theater').addEventListener('change',render);$('#day').addEventListener('change',render);load()
+const $ = (s) => document.querySelector(s)
+function hash(s) {
+  return [...s].reduce((a, c) => a + c.charCodeAt(0), 0)
+}
+function render() {
+  const ti = theaters.findIndex((x) => x[0] === $('#theater').value),
+    di = days.findIndex((x) => x[0] === $('#day').value)
+  const showing = movies.filter((m) => m.status === 'showing')
+  $('#list').innerHTML = showing.length
+    ? showing
+        .map((m, i) => {
+          const set = timeSets[(i + ti + di) % timeSets.length]
+          const count = 3 + ((hash(m.title) + ti + di) % 3)
+          const times = set.slice(0, count)
+          return `<article class="schedule-row">
+            <div>
+            <h2>${esc(m.title)}</h2>
+            <p>${esc(m.genre || 'Phim')} · ${esc(m.duration || '—')} phút · ${esc(theaters[ti][1])}</p>
+            </div>
+            <div class="time-list">${times.map((t) => `<a href="/trangchu.html#showing" title="Đặt vé ${esc(m.title)} lúc ${t}">${t}</a>`).join('')}</div>
+            </article>`
+        })
+        .join('')
+    : `<div class="empty-page">Chưa có phim đang chiếu.</div>`
+}
+async function load() {
+  const cached = localStorage.getItem('cgv_movie_cache_v2')
+  if (cached) {
+    try {
+      movies = JSON.parse(cached)
+      render()
+    } catch {}
+  }
+  try {
+    const ctl = new AbortController()
+    setTimeout(() => ctl.abort(), 1800)
+    const r = await fetch(apiUrl('/movies'), { signal: ctl.signal })
+    if (!r.ok) throw 0
+    movies = await r.json()
+    localStorage.setItem('cgv_movie_cache_v2', JSON.stringify(movies))
+  } catch {}
+  render()
+}
+$('#theater').addEventListener('change', render)
+$('#day').addEventListener('change', render)
+load()

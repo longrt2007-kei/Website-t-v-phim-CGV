@@ -14,29 +14,38 @@ const existingAdmin = users.find({ role: 'admin' }).value()
 
 if (!existingAdmin && adminPassword) {
   const allUsers = users.value()
-  const nextId = Math.max(0, ...allUsers.map(user => Number(user.id) || 0)) + 1
-  users.push({
-    id: nextId,
-    username: adminUsername,
-    email: adminEmail,
-    password: bcrypt.hashSync(adminPassword, 10),
-    name: 'CGV Administrator',
-    fullName: 'CGV Administrator',
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-  }).write()
-} else if (existingAdmin && adminPassword && (
-  existingAdmin.username !== adminUsername ||
-  existingAdmin.email !== adminEmail ||
-  !bcrypt.compareSync(adminPassword, existingAdmin.password || '')
-)) {
-  users.find({ role: 'admin' }).assign({
-    username: adminUsername,
-    email: adminEmail,
-    password: bcrypt.hashSync(adminPassword, 10),
-  }).write()
+  const nextId = Math.max(0, ...allUsers.map((user) => Number(user.id) || 0)) + 1
+  users
+    .push({
+      id: nextId,
+      username: adminUsername,
+      email: adminEmail,
+      password: bcrypt.hashSync(adminPassword, 10),
+      name: 'CGV Administrator',
+      fullName: 'CGV Administrator',
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+    })
+    .write()
+} else if (
+  existingAdmin &&
+  adminPassword &&
+  (existingAdmin.username !== adminUsername ||
+    existingAdmin.email !== adminEmail ||
+    !bcrypt.compareSync(adminPassword, existingAdmin.password || ''))
+) {
+  users
+    .find({ role: 'admin' })
+    .assign({
+      username: adminUsername,
+      email: adminEmail,
+      password: bcrypt.hashSync(adminPassword, 10),
+    })
+    .write()
 } else if (!adminPassword) {
-  console.warn('ADMIN_PASSWORD chưa được cấu hình; tài khoản quản trị không được tạo hoặc cập nhật.')
+  console.warn(
+    'ADMIN_PASSWORD chưa được cấu hình; tài khoản quản trị không được tạo hoặc cập nhật.',
+  )
 }
 
 app.db = router.db
