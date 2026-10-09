@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 
 const app = jsonServer.create()
 const router = jsonServer.router('db.json')
+router.db.defaults({ bookings: [] }).write()
 const middlewares = jsonServer.defaults()
 
 const users = router.db.get('users')
