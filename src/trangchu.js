@@ -44,14 +44,14 @@ document.querySelector('#app').innerHTML = `
   <div class="container hero-catalog-inner">
     <div class="hero-copy hero-copy-catalog">
       <div class="hero-kicker-row">
-        <span class="hero-badge">CGV · PHIM NỔI BẬT 2026</span>
+        <span class="hero-badge">CGV CINEMAS · PHIM ĐANG CHIẾU</span>
       </div>
       <p class="hero-date">${today}</p>
-      <h1>HẸN NHAU<br><span>Ở RẠP.</span></h1>
-      <p class="hero-sub">Khám phá những bộ phim nổi bật của 2026 — từ <strong>phim Việt giàu cảm xúc</strong> đến kinh dị, hành động và bom tấn quốc tế. Xem thông tin phim, lịch chiếu và chọn suất phù hợp cho buổi hẹn tiếp theo.</p>
+      <h1>PHIM ĐANG<br><span>CHIẾU TẠI CGV.</span></h1>
+      <p class="hero-sub">Khám phá phim đang chiếu, xem lịch tại các cụm rạp CGV và chọn suất phù hợp. Từ những câu chuyện Việt giàu cảm xúc đến các bom tấn quốc tế, bộ phim tiếp theo của bạn bắt đầu tại đây.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>XEM PHIM ĐANG HOT</span></a>
-        <a class="btn btn-ghost" href="#vietnam">PHIM VIỆT 2026</a>
+        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>KHÁM PHÁ PHIM</span></a>
+        <a class="btn btn-ghost" href="#showtimes">TÌM SUẤT CHIẾU</a>
       </div>
       <div class="hero-stats hero-stats-2026">
         <div><strong id="homeMovieCount">${allMovies.length}</strong><span>Tựa phim nổi bật</span></div>
