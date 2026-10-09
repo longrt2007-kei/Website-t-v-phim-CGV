@@ -44,14 +44,14 @@ document.querySelector('#app').innerHTML = `
   <div class="container hero-catalog-inner">
     <div class="hero-copy hero-copy-catalog">
       <div class="hero-kicker-row">
-        <span class="hero-badge">CGV · PHIM NỔI BẬT 2026</span>
+        <span class="hero-badge">CGV CINEMAS · PHIM ĐANG CHIẾU</span>
       </div>
       <p class="hero-date">${today}</p>
-      <h1>HẸN NHAU<br><span>Ở RẠP.</span></h1>
-      <p class="hero-sub">Khám phá những bộ phim nổi bật của 2026 — từ <strong>phim Việt giàu cảm xúc</strong> đến kinh dị, hành động và bom tấn quốc tế. Xem thông tin phim, lịch chiếu và chọn suất phù hợp cho buổi hẹn tiếp theo.</p>
+      <h1>ĐIỂM HẸN<br><span>ĐIỆN ẢNH.</span></h1>
+      <p class="hero-sub">Khám phá phim đang chiếu, xem lịch tại các cụm rạp CGV và chọn suất phù hợp. Từ những câu chuyện Việt giàu cảm xúc đến các bom tấn quốc tế, bộ phim tiếp theo của bạn bắt đầu tại đây.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>XEM PHIM ĐANG HOT</span></a>
-        <a class="btn btn-ghost" href="#vietnam">PHIM VIỆT 2026</a>
+        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>KHÁM PHÁ PHIM</span></a>
+        <a class="btn btn-ghost" href="#showtimes">TÌM SUẤT CHIẾU</a>
       </div>
       <div class="hero-stats hero-stats-2026">
         <div><strong id="homeMovieCount">${allMovies.length}</strong><span>Tựa phim nổi bật</span></div>
@@ -104,7 +104,7 @@ document.querySelector('#app').innerHTML = `
   <div class="container">
     <div class="section-head">
       <div><span class="eyebrow">COMING SOON · 2026</span><h2>PHIM SẮP CHIẾU</h2><p class="section-intro">Các phim có ngày phát hành đã được công bố; nội dung chưa công bố sẽ được ghi rõ là đang cập nhật.</p></div>
-      <a href="#" class="see-all">Xem tất cả</a>
+        <a href="#comingMovieGrid" class="see-all">Xem danh sách phim sắp chiếu</a>
     </div>
     <div class="grid grid-4 coming-grid" id="comingMovieGrid">
       ${comingSoon.map((m) => movieCard(m, { player: true, detailOnly: true })).join('')}
@@ -160,19 +160,19 @@ document.querySelector('#app').innerHTML = `
         <div class="promo-icon">${icons.popcorn}</div>
         <h3>Combo sinh đôi</h3>
         <p>Mua 2 vé bất kỳ, nhận ngay bắp nước combo <strong>giảm 40%</strong>.</p>
-        <a href="#" class="btn btn-primary btn-sm">NHẬN NGAY</a>
+        <a href="#showtimes" class="btn btn-primary btn-sm">CHỌN SUẤT CHIẾU</a>
       </article>
       <article class="promo-card">
         <div class="promo-icon">${icons.gift}</div>
         <h3>Thứ Ba vui vẻ</h3>
         <p>Giảm <strong>50%</strong> giá vé cho mọi suất chiếu thứ Ba hằng tuần.</p>
-        <a href="#" class="btn btn-primary btn-sm">NHẬN NGAY</a>
+        <a href="#showtimes" class="btn btn-primary btn-sm">XEM LỊCH CHIẾU</a>
       </article>
       <article class="promo-card">
         <div class="promo-icon">${icons.card}</div>
         <h3>Thành viên VIP</h3>
         <p>Tích điểm hoàn tiền <strong>5%</strong> cho mỗi giao dịch cùng quà sinh nhật.</p>
-        <a href="#" class="btn btn-primary btn-sm">ĐĂNG KÝ</a>
+        <a href="/dang-ky.html" class="btn btn-primary btn-sm">ĐĂNG KÝ THÀNH VIÊN</a>
       </article>
     </div>
   </div>
@@ -208,7 +208,7 @@ document.querySelector('#app').innerHTML = `
   <div class="container">
     <div class="section-head">
       <h2>TIN ĐIỆN ẢNH</h2>
-      <a href="#" class="see-all">Xem tất cả</a>
+        <a href="#news" class="see-all">Tin điện ảnh mới nhất</a>
     </div>
     <div class="news-grid">
       ${news.map((n) => `
@@ -220,10 +220,32 @@ document.querySelector('#app').innerHTML = `
             <span class="tag">${n.tag}</span>
             <h3>${n.title}</h3>
             <p>${n.desc}</p>
-            <a href="#" class="news-more">Đọc tiếp</a>
+            <a href="#showing" class="news-more">Khám phá phim liên quan</a>
           </div>
         </article>
       `).join('')}
+    </div>
+  </div>
+</section>
+
+<section class="section home-faq" id="faq">
+  <div class="container">
+    <div class="section-head">
+      <div><span class="eyebrow">HỖ TRỢ KHÁN GIẢ</span><h2>CÂU HỎI THƯỜNG GẶP</h2><p class="section-intro">Thông tin nhanh về lịch chiếu, đặt vé và vé đã lưu trên tài khoản.</p></div>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>Làm thế nào để xem lịch chiếu tại rạp gần tôi?</summary>
+        <p>Chọn khu vực và rạp trong mục <a href="#showtimes">Lịch chiếu theo khu vực</a>. Bạn cũng có thể chọn ngày và rạp ở phần lịch chiếu bốn ngày.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Tôi có thể chọn ghế và đặt vé ở đâu?</summary>
+        <p>Mở phim đang chiếu, chọn suất phù hợp rồi tiếp tục theo các bước chọn ghế và xác nhận trong cửa sổ đặt vé.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Xem lại vé đã đặt như thế nào?</summary>
+        <p>Mở mục <a href="/ve-cua-toi.html">Vé của tôi</a> trên thanh điều hướng để xem các vé đã lưu.</p>
+      </details>
     </div>
   </div>
 </section>
@@ -241,18 +263,11 @@ document.querySelector('#app').innerHTML = `
 <section class="app-banner">
   <div class="container app-inner">
     <div>
-      <h2>Trải nghiệm đặt vé trên di động</h2>
-      <p>Giao diện responsive được tối ưu để thao tác thuận tiện trên điện thoại.</p>
+      <h2>Đặt vé xem phim thật dễ dàng</h2>
+      <p>Chọn phim, rạp và suất chiếu phù hợp ngay trên website CGV.</p>
     </div>
     <div class="app-badges">
-      <a href="#" class="store-badge">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22z"/><path d="M12 1a8 8 0 0 1 6 12l-6 3-6-3a8 8 0 0 1 6-12z"/></svg>
-        <span><small>CÓ SẴN TRÊN</small><b>App Store</b></span>
-      </a>
-      <a href="#" class="store-badge">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 3 9 9-9 9V3z"/><path d="M13 12h8"/></svg>
-        <span><small>GOOGLE PLAY</small><b>Google Play</b></span>
-      </a>
+      <a href="#showtimes" class="btn btn-primary">${icons.ticket}<span>XEM LỊCH CHIẾU</span></a>
     </div>
   </div>
 </section>
@@ -286,7 +301,7 @@ document.querySelector('#app').innerHTML = `
       </div>
       <div class="footer-col">
         <h4>HỖ TRỢ</h4>
-        <a href="#">Câu hỏi thường gặp</a>
+        <a href="#faq">Câu hỏi thường gặp</a>
         <a href="#">Điều khoản sử dụng</a>
         <a href="#">Chính sách hoàn vé</a>
         <a href="#">Liên hệ</a>

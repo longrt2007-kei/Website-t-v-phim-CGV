@@ -2032,6 +2032,51 @@ body { background:#07090d; }
 .hero-mini-copy span { font-size:9px; letter-spacing:1.5px; color:#f5c451; font-weight:900; }
 .hero-mini-copy strong { font-size:16px; line-height:1.15; text-transform:uppercase; }
 
+/* Home hero: keep the headline, actions and featured posters clear at every width. */
+.hero.hero-2026.hero-catalog {
+  min-height: 0;
+  padding: clamp(112px, 12vw, 154px) 0 clamp(76px, 9vw, 112px);
+}
+.hero-catalog-inner {
+  width: min(100% - 48px, 1240px);
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr);
+  gap: clamp(36px, 6vw, 84px);
+}
+.hero-copy-catalog { min-width: 0; max-width: 680px; }
+.hero-copy-catalog .hero-kicker-row { margin-bottom: 22px; }
+.hero-copy-catalog .hero-badge { padding: 8px 12px; border-radius: 999px; font-size: 9px; letter-spacing: 1.2px; }
+.hero-copy-catalog .hero-date { margin: 0 0 14px; font-size: 11px; letter-spacing: 1.4px; }
+.hero-copy-catalog h1 {
+  max-width: 700px;
+  font-size: clamp(48px, 6.25vw, 82px);
+  line-height: 1.12;
+  letter-spacing: .025em;
+  word-spacing: .08em;
+  overflow-wrap: normal;
+  text-wrap: pretty;
+}
+.hero-copy-catalog h1 span { color: #f04a52; }
+.hero-copy-catalog .hero-sub { max-width: 570px; margin: 22px 0 26px; font-size: 15px; line-height: 1.75; }
+.hero-copy-catalog .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-copy-catalog .hero-cta .btn { min-height: 48px; padding: 0 18px; font-size: 11px; letter-spacing: .5px; }
+.hero-stats-2026 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 32px; padding-top: 20px; }
+.hero-stats-2026 > div { min-width: 0; padding-right: 16px; margin-right: 0; }
+.hero-stats-2026 strong { font-size: 26px; }
+.hero-stats-2026 span { font-size: 10px; line-height: 1.45; }
+.hero-poster-wall { min-width: 0; width: 100%; max-width: 570px; justify-self: end; gap: 16px; transform: rotate(.6deg); }
+.hero-mini-poster { min-width: 0; border-radius: 15px; }
+.hero-mini-copy { left: 13px; right: 13px; bottom: 13px; }
+.hero-mini-copy strong { font-size: clamp(11px, 1.2vw, 15px); overflow-wrap: break-word; }
+.home-faq { background: linear-gradient(180deg, rgba(7,16,31,.82), rgba(3,9,20,.92)); }
+.faq-list { display: grid; gap: 10px; max-width: 900px; }
+.faq-item { border: 1px solid rgba(130,166,221,.15); border-radius: 12px; background: rgba(12,20,34,.72); }
+.faq-item summary { position: relative; padding: 18px 52px 18px 20px; color: #f4f6fa; font-size: 14px; font-weight: 750; line-height: 1.55; cursor: pointer; list-style: none; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #ff5961; font-size: 22px; font-weight: 400; }
+.faq-item[open] summary::after { content: '−'; }
+.faq-item p { padding: 0 20px 19px; color: #aeb8c8; font-size: 13px; line-height: 1.75; }
+.faq-item p a { color: #ff747b; text-decoration: underline; text-underline-offset: 3px; }
+
 .section-head-rich { align-items:flex-end; }
 .section-intro { margin-top:8px; color:#7f8793; font-size:13px; max-width:620px; line-height:1.6; }
 .movie-filter { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
@@ -2054,13 +2099,13 @@ body { background:#07090d; }
 .btn-details, .btn-ticket { font-size:10px !important; letter-spacing:.75px; }
 
 @media (max-width:1100px){
-  .hero-catalog-inner{grid-template-columns:1fr 420px;gap:42px}.hero-copy-catalog h1{font-size:72px}.hero-catalog{min-height:auto}
+  .hero-catalog-inner{grid-template-columns:minmax(0,1fr) minmax(0,.88fr);gap:40px}.hero-copy-catalog h1{font-size:clamp(48px,6.4vw,70px)}.hero-catalog{min-height:auto}
 }
 @media (max-width:900px){
-  .hero-catalog{padding:62px 0 82px}.hero-catalog-inner{grid-template-columns:1fr}.hero-copy-catalog{max-width:none}.hero-poster-wall{max-width:620px}.hero-copy-catalog h1{font-size:clamp(58px,13vw,86px)}.section-head-rich{align-items:flex-start}.movie-filter{justify-content:flex-start}
+  .hero.hero-2026.hero-catalog{padding:104px 0 76px}.hero-catalog-inner{width:min(100% - 40px,700px);grid-template-columns:minmax(0,1fr);gap:38px}.hero-copy-catalog{max-width:none}.hero-copy-catalog h1{font-size:clamp(52px,10vw,76px)}.hero-poster-wall{max-width:620px;justify-self:start}.section-head-rich{align-items:flex-start}.movie-filter{justify-content:flex-start}
 }
 @media (max-width:620px){
-  .hero-poster-wall{gap:10px}.hero-mini-poster{border-radius:13px}.hero-mini-poster:nth-child(2),.hero-mini-poster:nth-child(4){transform:translateY(20px)}.hero-mini-poster:nth-child(2):hover,.hero-mini-poster:nth-child(4):hover{transform:translateY(15px)}.hero-stats-2026{grid-template-columns:1fr 1fr;row-gap:16px}.hero-stats-2026>div{border-right:0;margin-right:0}.hero-copy-catalog h1{letter-spacing:-3px}.movie-filter{gap:6px}.filter-chip{padding:8px 11px;font-size:10px}
+  .hero.hero-2026.hero-catalog{padding:92px 0 62px}.hero-catalog-inner{width:min(100% - 36px,540px);gap:30px}.hero-copy-catalog .hero-kicker-row{margin-bottom:18px}.hero-copy-catalog h1{font-size:clamp(43px,11vw,62px);letter-spacing:.025em;line-height:1.12}.hero-copy-catalog .hero-sub{font-size:14px;line-height:1.7;margin:18px 0 22px}.hero-copy-catalog .hero-cta{display:grid;grid-template-columns:1fr}.hero-copy-catalog .hero-cta .btn{width:100%;justify-content:center}.hero-stats-2026{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:26px;padding-top:17px}.hero-stats-2026>div{padding:0;border:0}.hero-stats-2026 strong{font-size:22px}.hero-stats-2026 span{font-size:9px;letter-spacing:.35px}.hero-poster-wall{gap:9px}.hero-mini-poster{border-radius:11px}.hero-mini-poster:nth-child(2),.hero-mini-poster:nth-child(4){transform:translateY(16px)}.hero-mini-poster:nth-child(2):hover,.hero-mini-poster:nth-child(4):hover{transform:translateY(12px)}.hero-mini-copy{left:9px;right:9px;bottom:9px}.hero-mini-copy span{font-size:8px;letter-spacing:.8px}.hero-mini-copy strong{font-size:clamp(9px,2.8vw,12px)}.movie-filter{gap:6px}.filter-chip{padding:8px 11px;font-size:10px}
 }
 
 /* SRS booking flow: theater/date -> showtime -> seat -> ticket */

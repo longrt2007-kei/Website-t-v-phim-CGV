@@ -30,7 +30,7 @@ export const showing = [
     title: 'Bóng Ma Nhà Hát', meta: 'Hài · Kinh dị · 97 phút', genre: 'T16', country: 'Việt Nam', origin: 'vn', badge: 'HORROR COMEDY', year: '2026',
     short: 'Tuấn phải vực dậy một nhà hát cũ và phát hiện nơi đây bị ám bởi Nhã, một nữ diễn viên chết oan chưa thể siêu thoát.',
     color: 'linear-gradient(165deg,#553672 0%,#211728 48%,#09080c 100%)',
-    image: 'https://bazaarvietnam.vn/wp-content/uploads/2026/09/BZVN-bong-ma-nha-hat-12.jpg', fallback: officialPosterFallback,
+    image: '/posters/official/bong-ma-nha-hat.jpg', fallback: '/posters/official/bong-ma-nha-hat.jpg',
     times: ['10:10', '12:10', '14:20', '16:30', '18:40', '20:50']
   },
   {
