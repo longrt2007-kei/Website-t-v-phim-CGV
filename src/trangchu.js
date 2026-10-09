@@ -47,7 +47,7 @@ document.querySelector('#app').innerHTML = `
         <span class="hero-badge">CGV CINEMAS · PHIM ĐANG CHIẾU</span>
       </div>
       <p class="hero-date">${today}</p>
-      <h1>ĐIỂM HẸN<br><span>ĐIỆN ẢNH.</span></h1>
+      <h1>PHIM ĐANG<br><span>CHIẾU TẠI CGV.</span></h1>
       <p class="hero-sub">Khám phá phim đang chiếu, xem lịch tại các cụm rạp CGV và chọn suất phù hợp. Từ những câu chuyện Việt giàu cảm xúc đến các bom tấn quốc tế, bộ phim tiếp theo của bạn bắt đầu tại đây.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="#showing">${icons.ticket}<span>KHÁM PHÁ PHIM</span></a>
