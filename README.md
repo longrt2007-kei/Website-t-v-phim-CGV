@@ -16,14 +16,6 @@ Hoặc trên Windows chạy `CHAY_WEB.bat`.
 
 `npm run dev` chạy đồng thời Vite và API JSON Server có `json-server-auth`.
 
-## Email vé và QR soát vé
-
-Khi người dùng đã đăng nhập và hoàn tất bước xác nhận thanh toán, API lưu vé và gửi email xác nhận tới email tài khoản. Email và trang vé có QR; nhân viên có thể quét bằng camera điện thoại để mở trang xác nhận thông tin vé.
-
-Để bật gửi Gmail, cấu hình `GMAIL_USER`, `GMAIL_APP_PASSWORD` và `PUBLIC_URL` trong môi trường chạy API. Với Gmail cần bật xác minh 2 bước và tạo **App Password**; không dùng mật khẩu đăng nhập Gmail. Trên Render, điền hai biến Gmail ở Environment và đặt `PUBLIC_URL` thành URL gốc của dịch vụ API. Khi chạy cục bộ, đặt các biến trong `.env` (không đưa tệp này lên Git). Nếu SMTP chưa được cấu hình hoặc Gmail từ chối gửi, vé vẫn được tạo và giao diện sẽ báo email chưa gửi.
-
-QR hiện mở trang kiểm tra vé qua URL công khai API, vì vậy điện thoại quét cần truy cập được API. QR code là định danh vé; xác nhận thanh toán trong prototype hiện vẫn do người dùng bấm thủ công.
-
 ## Đăng ký / đăng nhập người dùng
 
 - `dang-ky.html`: tạo tài khoản mới.
