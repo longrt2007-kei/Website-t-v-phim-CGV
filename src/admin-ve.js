@@ -1,4 +1,5 @@
 import './admin.css'
+import './admin-dark.css'
 import { adminNav } from './shared/admin-nav.js'
 import {
   getBookings,
