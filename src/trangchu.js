@@ -613,6 +613,25 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       </div>
     </div>`
   document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
+    const confirmButton = document.querySelector('#paymentConfirmBtn')
+    if (confirmButton.disabled) return
+    confirmButton.disabled = true
+
+    // Re-read the seat map at the last step so another tab cannot silently
+    // sell a seat selected from an older snapshot.
+    const latestSeatMap = storageGet('cgv_seat_state_v1', {})
+    const latestOccupied = latestSeatMap[key] || occupied
+    const conflicts = seats.filter((seat) => latestOccupied.includes(seat))
+    if (conflicts.length) {
+      confirmButton.disabled = false
+      const message = document.createElement('p')
+      message.className = 'payment-conflict'
+      message.setAttribute('role', 'alert')
+      message.textContent = `Ghế ${conflicts.join(', ')} vừa được đặt. Vui lòng chọn ghế khác.`
+      document.querySelector('.payment-summary').append(message)
+      return
+    }
+
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
     const booking = {
@@ -633,8 +652,8 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     }
     bookings.unshift(booking)
     storageSet('cgv_bookings_v1', bookings)
-    occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
-    storageSet('cgv_seat_state_v1', occupiedMap)
+    latestSeatMap[key] = [...new Set([...latestOccupied, ...seats])]
+    storageSet('cgv_seat_state_v1', latestSeatMap)
     renderTicket(booking)
   })
 }
