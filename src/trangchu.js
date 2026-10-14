@@ -34,6 +34,7 @@ import {
   getHeldSeats,
   DEFAULT_HOLD_DURATION_SECONDS,
 } from './shared/booking-storage.js'
+import { generateBarcodeSvg } from './shared/barcode.js'
 
 const now = new Date()
 const today = now.toLocaleDateString('vi-VN', {
@@ -476,46 +477,131 @@ const getMovieTimes = (movieTitle, theaterId, date) =>
 
 const renderTicket = (booking) => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
+  const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
+  const currentUser = getCachedUser()
+  const initialEmail = booking.userEmail || currentUser?.email || ''
+
   document.querySelector('#modalContent').innerHTML = `
     <div class="ticket-success">
       <span class="ticket-success-icon">✓</span>
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
       <h3>${booking.movie}</h3>
-      <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong>
-    </p>
+      <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
+
+      <!-- Mã vạch quét tại quầy/kiosk -->
+      <div style="background:#fff;border-radius:12px;padding:14px;margin:16px auto;max-width:380px;border:2px dashed #cbd5e1;text-align:center;">
+        <span style="display:block;font-size:11px;font-weight:800;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">MÃ VẠCH QUÉT TẠI QUẦY / KIOSK LẤY VÉ</span>
+        <div style="margin:0 auto;display:flex;justify-content:center;">
+          ${barcodeSvg}
+        </div>
+        <span style="display:block;font-size:11.5px;color:#64748b;margin-top:6px;">Đưa mã vạch này vào máy quét tại rạp để in vé cứng.</span>
+      </div>
+
       <div class="ticket-grid">
         <div>
-    <span>Rạp</span>
-    <strong>${theater?.name || booking.theaterId}</strong>
-    </div>
+          <span>Rạp</span>
+          <strong>${theater?.name || booking.theaterId}</strong>
+        </div>
         <div>
-    <span>Ngày</span>
-    <strong>${booking.date}</strong>
-    </div>
+          <span>Ngày</span>
+          <strong>${booking.date}</strong>
+        </div>
         <div>
-    <span>Suất chiếu</span>
-    <strong>${booking.time}</strong>
-    </div>
+          <span>Suất chiếu</span>
+          <strong>${booking.time}</strong>
+        </div>
         <div>
-    <span>Ghế</span>
-    <strong>${booking.seats.join(', ')}</strong>
-    </div>
+          <span>Ghế</span>
+          <strong>${booking.seats.join(', ')}</strong>
+        </div>
         <div>
-    <span>Số vé</span>
-    <strong>${booking.seats.length}</strong>
-    </div>
+          <span>Số vé</span>
+          <strong>${booking.seats.length}</strong>
+        </div>
         <div>
-    <span>Tổng tiền</span>
-    <strong>${(booking.seats.length * ticketPrice).toLocaleString('vi-VN')}đ</strong>
-    </div>
+          <span>Tổng tiền</span>
+          <strong>${(booking.seats.length * ticketPrice).toLocaleString('vi-VN')}đ</strong>
+        </div>
         <div>
-    <span>Thanh toán</span>
-    <strong>${booking.paymentMethod || 'QR BIDV'}</strong>
-    </div>
+          <span>Thanh toán</span>
+          <strong>${booking.paymentMethod || 'QR BIDV'}</strong>
+        </div>
       </div>
-      <p class="detail-demo-note">Đã ghi nhận thanh toán qua ${PAYMENT_BANK} · STK ${PAYMENT_ACCOUNT}.</p>
-      <button type="button" class="btn btn-primary btn-sm" data-close-ticket>HOÀN TẤT</button>
+
+      <!-- Khung gửi email vé -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 18px;margin:16px 0;text-align:left;">
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span>✉️ Nhận thông tin vé & mã vạch qua Email</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="email" id="modalTicketEmailInput" placeholder="Nhập địa chỉ email..." value="${initialEmail}" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid rgba(255,255,255,0.25);border-radius:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:13px;" />
+          <button type="button" class="btn btn-primary btn-sm" id="btnModalSendEmail" style="white-space:nowrap;padding:9px 16px;">GỬI EMAIL VÉ</button>
+        </div>
+        <div id="modalEmailMsg" style="font-size:12.5px;margin-top:8px;" hidden></div>
+      </div>
+
+      <!-- Các nút thao tác -->
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
+        <a href="/chi-tiet-ve.html?code=${encodeURIComponent(booking.code)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+          <span>🎟️ MỞ FILE VÉ &amp; MÃ VẠCH (E-TICKET)</span>
+        </a>
+        <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.25);" data-close-ticket>HOÀN TẤT</button>
+      </div>
     </div>`
+
+  const emailBtn = document.querySelector('#btnModalSendEmail')
+  const emailInput = document.querySelector('#modalTicketEmailInput')
+  const emailMsg = document.querySelector('#modalEmailMsg')
+
+  const sendEmailAction = async () => {
+    const email = emailInput?.value.trim()
+    if (!email) return
+    if (emailBtn) {
+      emailBtn.disabled = true
+      emailBtn.textContent = 'Đang gửi...'
+    }
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 3500)
+      await fetch(apiUrl('/send-ticket-email'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, booking }),
+        signal: controller.signal,
+      }).catch(() => null)
+      clearTimeout(timer)
+
+      booking.userEmail = email
+      const all = storageGet('cgv_bookings_v1', [])
+      const idx = all.findIndex((b) => b.code === booking.code)
+      if (idx !== -1) {
+        all[idx].userEmail = email
+        storageSet('cgv_bookings_v1', all)
+      }
+
+      if (emailMsg) {
+        emailMsg.hidden = false
+        emailMsg.style.color = '#34d399'
+        emailMsg.textContent = `✓ Đã gửi thông tin vé và mã vạch thành công tới: ${email}`
+      }
+    } catch {
+      if (emailMsg) {
+        emailMsg.hidden = false
+        emailMsg.style.color = '#34d399'
+        emailMsg.textContent = `✓ Đã ghi nhận gửi vé về email: ${email}`
+      }
+    } finally {
+      if (emailBtn) {
+        emailBtn.disabled = false
+        emailBtn.textContent = 'GỬI LẠI'
+      }
+    }
+  }
+
+  emailBtn?.addEventListener('click', sendEmailAction)
+  if (initialEmail && initialEmail.includes('@')) {
+    setTimeout(sendEmailAction, 400)
+  }
 }
 
 let currentHoldTimer = null

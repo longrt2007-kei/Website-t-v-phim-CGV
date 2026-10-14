@@ -111,8 +111,9 @@ function render() {
               </dl>
               <small>Đặt lúc ${formatDateTime(t.createdAt)}</small>
               <div class="ticket-footer-actions">
-              <button data-copy="${esc(t.code)}">Sao chép mã vé</button>
-              <button class="danger" data-cancel="${esc(t.code)}">Xóa khỏi lịch sử</button>
+              <a href="/chi-tiet-ve.html?code=${esc(t.code)}" target="_blank" style="text-decoration:none;font-weight:700;color:#c72b2b;display:inline-flex;align-items:center;padding:6px 12px;background:rgba(215,25,32,0.1);border-radius:6px;">🎟️ Xem vé &amp; Mã vạch</a>
+              <button data-copy="${esc(t.code)}">Sao chép mã</button>
+              <button class="danger" data-cancel="${esc(t.code)}">Xóa</button>
               </div>
               </article>`,
         )

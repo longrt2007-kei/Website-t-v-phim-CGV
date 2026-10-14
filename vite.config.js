@@ -35,6 +35,7 @@ export default defineConfig({
         dangNhap: resolve(__dirname, 'dang-nhap.html'),
         dangKy: resolve(__dirname, 'dang-ky.html'),
         taiKhoan: resolve(__dirname, 'tai-khoan.html'),
+        chiTietVe: resolve(__dirname, 'chi-tiet-ve.html'),
       },
     },
   },

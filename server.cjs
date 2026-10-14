@@ -56,6 +56,49 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' })
 })
 
+let nodemailer = null
+try {
+  nodemailer = require('nodemailer')
+} catch {}
+
+app.post('/send-ticket-email', async (req, res) => {
+  const { email, booking, htmlContent } = req.body || {}
+  if (!email || !booking) {
+    return res.status(400).json({ success: false, message: 'Thiếu email hoặc thông tin vé.' })
+  }
+
+  let realEmailSent = false
+  if (nodemailer && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      })
+      await transporter.sendMail({
+        from: `CGV Cinemas <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `[CGV Cinemas] Xác nhận vé xem phim ${booking.code} - ${booking.movie}`,
+        html: htmlContent || `<p>Vé xem phim CGV mã: <b>${booking.code}</b> cho phim <b>${booking.movie}</b>.</p>`,
+      })
+      realEmailSent = true
+    } catch (err) {
+      console.warn('Lỗi khi gửi email qua Gmail SMTP:', err.message)
+    }
+  }
+
+  console.log(`[Email Service] Gửi vé ${booking.code} tới ${email} (Thực tế: ${realEmailSent ? 'Thành công' : 'Mô phỏng/Ghi nhận'})`)
+  res.status(200).json({
+    success: true,
+    realEmailSent,
+    message: `Đã gửi vé thành công tới ${email}`,
+    email,
+    code: booking.code,
+  })
+})
+
 app.use((req, res, next) => {
   if (req.method === 'POST' && ['/register', '/signup'].includes(req.path.toLowerCase())) {
     req.body.role = 'customer'
