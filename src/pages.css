@@ -388,6 +388,16 @@ body {
   color: #52d7a1;
   border: 1px solid #52d7a133;
 }
+.ticket-status.used {
+  color: #cbd5e1;
+  background: #64748b2b;
+  border-color: #94a3b833;
+}
+.ticket-status.cancelled {
+  color: #ff747c;
+  background: #ef44441a;
+  border-color: #ef444433;
+}
 .ticket-card h2 {
   font-size: 21px;
   margin: 8px 0 4px;

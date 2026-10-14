@@ -16,6 +16,7 @@ const normalizeUser = (user) =>
     ? {
         id: user.id,
         name: user.name || user.fullName || '',
+        phone: user.phone || '',
         email: user.email || '',
         role: user.role || 'customer',
         createdAt: user.createdAt || '',
@@ -166,6 +167,19 @@ export async function refreshCurrentUser() {
     localStorage.setItem(USER_KEY, JSON.stringify(fallback))
     return fallback
   }
+}
+
+export async function updateCurrentUser({ name, email, phone }) {
+  const user = getCachedUser()
+  if (!user?.id) throw new Error('Không tìm thấy tài khoản đang đăng nhập.')
+  const updated = await authRequest(`/users/${encodeURIComponent(user.id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name, fullName: name, email: email.trim().toLowerCase(), phone }),
+  })
+  const safe = normalizeUser(updated?.user || updated)
+  localStorage.setItem(USER_KEY, JSON.stringify(safe))
+  window.dispatchEvent(new CustomEvent('cgv-auth-change'))
+  return safe
 }
 
 export function returnUrl(defaultUrl = '/trangchu.html') {

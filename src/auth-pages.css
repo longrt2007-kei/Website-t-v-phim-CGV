@@ -261,6 +261,27 @@ a {
   color: #738198;
   margin-bottom: 5px;
 }
+.account-field input {
+  width: 100%;
+  color: #fff;
+  background: #111a2c;
+  border: 1px solid #ffffff1b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.account-field input:focus {
+  outline: 2px solid #e32636;
+  outline-offset: 1px;
+}
+.profile-message {
+  min-height: 20px;
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.profile-message.success { color: #52d7a1; }
+.profile-message.error { color: #ff747c; }
+.account-actions button:disabled { opacity: .6; cursor: wait; }
 .account-actions {
   display: flex;
   gap: 12px;

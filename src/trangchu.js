@@ -641,6 +641,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       movie: m.title,
       theaterId,
       theaterName: theater?.name || theaterId,
+      room: '01',
       date,
       time,
       seats,
