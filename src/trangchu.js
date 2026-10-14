@@ -28,6 +28,12 @@ import {
   theaterOptions,
   totalTodayShows,
 } from './ui/home-components.js'
+import {
+  createSeatHold,
+  releaseSeatHold,
+  getHeldSeats,
+  DEFAULT_HOLD_DURATION_SECONDS,
+} from './shared/booking-storage.js'
 
 const now = new Date()
 const today = now.toLocaleDateString('vi-VN', {
@@ -512,10 +518,43 @@ const renderTicket = (booking) => {
     </div>`
 }
 
+let currentHoldTimer = null
+let currentHoldId = null
+const clearHoldTimer = () => {
+  if (currentHoldTimer) {
+    clearInterval(currentHoldTimer)
+    currentHoldTimer = null
+  }
+}
+
+const renderHoldExpired = (m, theaterId, date, time, seats) => {
+  document.querySelector('#modalContent').innerHTML = `
+    <div class="seat-hold-expired-box">
+      <div class="seat-hold-expired-icon">⏰</div>
+      <span class="detail-kicker">HẾT THỜI GIAN GIỮ CHỖ</span>
+      <h3>Thời gian giữ chỗ đã kết thúc!</h3>
+      <p>
+        Các ghế <strong>${seats.join(', ')}</strong> đã được tự động giải phóng để nhường quyền chọn cho khách hàng khác. Vui lòng chọn lại suất chiếu hoặc ghế để tiếp tục đặt vé.
+      </p>
+      <div style="margin-top: 14px;">
+        <button type="button" class="btn btn-primary" id="btnReSelectSeat">CHỌN LẠI GHẾ</button>
+      </div>
+    </div>`
+  document.querySelector('#btnReSelectSeat')?.addEventListener('click', () => {
+    openSeatSelection(m, theaterId, date, time)
+  })
+}
+
 const openSeatSelection = (m, theaterId, date, time) => {
+  clearHoldTimer()
+  if (currentHoldId) {
+    releaseSeatHold(currentHoldId)
+    currentHoldId = null
+  }
   const key = bookingKey(m.title, theaterId, date, time)
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
   const occupied = occupiedMap[key] || ['A2', 'B5', 'C7', 'D4', 'F8']
+  const heldSeats = getHeldSeats(key)
   const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
   const theater = theaters.find((t) => t.id === theaterId)
   document.querySelector('#modalContent').innerHTML = `
@@ -525,6 +564,7 @@ const openSeatSelection = (m, theaterId, date, time) => {
       <p>${theater?.name || ''} · ${date} · ${time}</p>
     </div>
     <div class="seat-flow-body">
+      <div id="seatConflictAlert" class="seat-conflict-alert" hidden></div>
       <div class="screen-label">MÀN HÌNH</div>
       <div class="seat-map">
         ${rows
@@ -533,31 +573,42 @@ const openSeatSelection = (m, theaterId, date, time) => {
               `<div class="seat-row">
                 <span>${r}</span>${Array.from({ length: 10 }, (_, i) => {
                 const seat = `${r}${i + 1}`
-                return `<button type="button" class="seat ${occupied.includes(seat) ? 'occupied' : ''}" data-seat="${seat}" ${occupied.includes(seat) ? 'disabled' : ''}>${i + 1}</button>`
+                const isOccupied = occupied.includes(seat)
+                const isHolding = !isOccupied && heldSeats.includes(seat)
+                const seatClass = isOccupied ? 'seat occupied' : isHolding ? 'seat holding' : 'seat'
+                const isDisabled = isOccupied || isHolding ? 'disabled' : ''
+                const seatTitle = isOccupied
+                  ? `Ghế ${seat} (Đã đặt)`
+                  : isHolding
+                    ? `Ghế ${seat} (Đang giữ chỗ)`
+                    : `Ghế ${seat} (Còn trống)`
+                return `<button type="button" class="${seatClass}" data-seat="${seat}" ${isDisabled} title="${seatTitle}">${i + 1}</button>`
               }).join('')}</div>`,
           )
           .join('')}
       </div>
       <div class="seat-legend">
-    <span>
-    <i class="seat-demo">
-    </i>Còn trống</span>
-    <span>
-    <i class="seat-demo selected">
-    </i>Đang chọn</span>
-    <span>
-    <i class="seat-demo occupied">
-    </i>Đã đặt</span>
-    </div>
+        <span>
+          <i class="seat-demo"></i>Còn trống
+        </span>
+        <span>
+          <i class="seat-demo selected"></i>Đang chọn
+        </span>
+        <span>
+          <i class="seat-demo holding"></i>Đang giữ chỗ
+        </span>
+        <span>
+          <i class="seat-demo occupied"></i>Đã đặt
+        </span>
+      </div>
       <div class="seat-summary">
-    <span>Ghế đã chọn: <strong id="selectedSeatText">Chưa chọn</strong>
-    </span>
-    <strong id="seatTotal">0đ</strong>
-    </div>
-      <button type="button" class="btn btn-primary" id="confirmSeatBtn" disabled>XÁC NHẬN ĐẶT VÉ</button>
+        <span>Ghế đã chọn: <strong id="selectedSeatText">Chưa chọn</strong></span>
+        <strong id="seatTotal">0đ</strong>
+      </div>
+      <button type="button" class="btn btn-primary" id="confirmSeatBtn" disabled>XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)</button>
     </div>`
   const selected = new Set()
-  document.querySelectorAll('#modalContent .seat:not(.occupied)').forEach((btn) =>
+  document.querySelectorAll('#modalContent .seat:not(.occupied):not(.holding)').forEach((btn) =>
     btn.addEventListener('click', () => {
       const seat = btn.dataset.seat
       selected.has(seat) ? selected.delete(seat) : selected.add(seat)
@@ -572,47 +623,120 @@ const openSeatSelection = (m, theaterId, date, time) => {
   )
   document.querySelector('#confirmSeatBtn').addEventListener('click', () => {
     const seats = [...selected]
-    openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key)
+    const holdRes = createSeatHold(key, seats, DEFAULT_HOLD_DURATION_SECONDS)
+    if (!holdRes.success) {
+      const alertBox = document.querySelector('#seatConflictAlert')
+      if (alertBox) {
+        alertBox.textContent = `⚠️ ${holdRes.message || 'Một số ghế bạn chọn vừa có khách khác giữ chỗ! Vui lòng chọn ghế khác.'}`
+        alertBox.hidden = false
+      }
+      setTimeout(() => openSeatSelection(m, theaterId, date, time), 1200)
+      return
+    }
+    currentHoldId = holdRes.hold.id
+    openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key, holdRes.hold)
   })
 }
 
-const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key) => {
+const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key, hold) => {
+  clearHoldTimer()
   const theater = theaters.find((t) => t.id === theaterId)
   const amount = seats.length * ticketPrice
   const code = `CGV${Date.now().toString().slice(-8)}`
   const transferContent = `${code} ${m.title}`.replace(/[^a-zA-Z0-9À-ỹ ]/g, '').slice(0, 45)
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-flow-head payment-head">
-      <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN</span>
+      <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN &amp; GIỮ CHỖ</span>
       <h3>Quét QR để thanh toán</h3>
       <p>${m.title} · ${theater?.name || ''} · ${date} · ${time}</p>
+    </div>
+    <div class="seat-hold-banner" id="seatHoldBanner">
+      <div class="seat-hold-top">
+        <div class="seat-hold-title-box">
+          <span class="seat-hold-badge">⏳ ĐANG GIỮ CHỖ</span>
+          <span class="seat-hold-heading">Ghế của bạn đã được tạm giữ</span>
+        </div>
+        <div class="seat-hold-timer-box">
+          <span class="seat-hold-timer-label">Thời gian giữ chỗ:</span>
+          <span class="seat-hold-timer-val" id="holdCountdown">05:00</span>
+        </div>
+      </div>
+      <div class="seat-hold-progress-track">
+        <div class="seat-hold-progress-fill" id="holdProgressFill" style="width: 100%;"></div>
+      </div>
+      <p class="seat-hold-desc">
+        Hệ thống đang tạm khóa ghế <strong>${seats.join(', ')}</strong> cho bạn trong <strong>5 phút</strong>. Vui lòng chuyển khoản quét QR trước khi hết giờ để xác nhận vé.
+      </p>
     </div>
     <div class="payment-body">
       <div class="payment-qr-card">
         <img class="payment-qr" src="${paymentQrUrl(amount, transferContent)}" alt="QR thanh toán BIDV ${PAYMENT_ACCOUNT}" />
         <div class="payment-bank">
-    <strong>${PAYMENT_BANK}</strong>
-    <span>STK ${PAYMENT_ACCOUNT}</span>
-    </div>
+          <strong>${PAYMENT_BANK}</strong>
+          <span>STK ${PAYMENT_ACCOUNT}</span>
+        </div>
       </div>
       <div class="payment-summary">
         <div>
-    <span>Ghế</span>
-    <strong>${seats.join(', ')}</strong>
-    </div>
+          <span>Ghế đã giữ</span>
+          <strong>${seats.join(', ')}</strong>
+        </div>
         <div>
-    <span>Số tiền</span>
-    <strong class="payment-amount">${amount.toLocaleString('vi-VN')}đ</strong>
-    </div>
+          <span>Số tiền</span>
+          <strong class="payment-amount">${amount.toLocaleString('vi-VN')}đ</strong>
+        </div>
         <div>
-    <span>Nội dung CK</span>
-    <strong>${transferContent}</strong>
-    </div>
+          <span>Nội dung CK</span>
+          <strong>${transferContent}</strong>
+        </div>
         <p>Vui lòng quét QR bằng ứng dụng ngân hàng. Sau khi chuyển khoản thành công, bấm nút xác nhận bên dưới để hoàn tất đặt vé.</p>
-        <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
+        <div class="payment-actions-row">
+          <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
+          <button type="button" class="btn-hold-back" id="btnCancelHold">← HỦY GIỮ CHỖ / CHỌN LẠI</button>
+        </div>
       </div>
     </div>`
+
+  const banner = document.querySelector('#seatHoldBanner')
+  const countdownEl = document.querySelector('#holdCountdown')
+  const progressEl = document.querySelector('#holdProgressFill')
+  const totalSec = hold?.durationSeconds || DEFAULT_HOLD_DURATION_SECONDS
+  const expiresAt = hold?.expiresAt || Date.now() + totalSec * 1000
+
+  const updateTimer = () => {
+    const now = Date.now()
+    const remaining = Math.max(0, Math.round((expiresAt - now) / 1000))
+    const min = String(Math.floor(remaining / 60)).padStart(2, '0')
+    const sec = String(remaining % 60).padStart(2, '0')
+    if (countdownEl) countdownEl.textContent = `${min}:${sec}`
+    if (progressEl) progressEl.style.width = `${Math.min(100, (remaining / totalSec) * 100)}%`
+
+    if (remaining <= 60 && banner) {
+      banner.classList.add('urgent')
+    }
+
+    if (remaining <= 0) {
+      clearHoldTimer()
+      if (hold?.id) releaseSeatHold(hold.id)
+      currentHoldId = null
+      renderHoldExpired(m, theaterId, date, time, seats)
+    }
+  }
+
+  updateTimer()
+  currentHoldTimer = setInterval(updateTimer, 1000)
+
+  document.querySelector('#btnCancelHold')?.addEventListener('click', () => {
+    clearHoldTimer()
+    if (hold?.id) releaseSeatHold(hold.id)
+    currentHoldId = null
+    openSeatSelection(m, theaterId, date, time)
+  })
+
   document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
+    clearHoldTimer()
+    if (hold?.id) releaseSeatHold(hold.id)
+    currentHoldId = null
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
     const booking = {
@@ -860,6 +984,11 @@ const openMovieDetail = (title) => {
 }
 
 const closeModal = () => {
+  clearHoldTimer()
+  if (currentHoldId) {
+    releaseSeatHold(currentHoldId)
+    currentHoldId = null
+  }
   document.querySelector('#movieModal').hidden = true
   document.body.style.overflow = ''
 }

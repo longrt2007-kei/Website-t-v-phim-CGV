@@ -3333,6 +3333,23 @@ body {
   border-color: #c8c1ba;
   cursor: not-allowed;
 }
+.seat.holding {
+  background: #f59e0b;
+  color: #1e1b18;
+  border-color: #d97706;
+  cursor: not-allowed;
+  position: relative;
+  font-weight: 900;
+}
+.seat.holding::after {
+  content: '•';
+  font-size: 14px;
+  line-height: 1;
+  color: #fff;
+  position: absolute;
+  top: 1px;
+  right: 2px;
+}
 .seat-legend {
   display: flex;
   gap: 18px;
@@ -3358,6 +3375,10 @@ body {
 .seat-demo.selected {
   background: #c72b2b;
   border-color: #c72b2b;
+}
+.seat-demo.holding {
+  background: #f59e0b;
+  border-color: #d97706;
 }
 .seat-demo.occupied {
   background: #c8c1ba;
@@ -3822,3 +3843,187 @@ body::before {
 .saved-ticket .btn-details {
   color: #fff !important;
 }
+
+/* Seat Hold & Reservation Enhancements */
+.seat-hold-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(217, 119, 6, 0.06));
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin: 0 28px 18px;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.08);
+  transition: all 0.3s ease;
+}
+.seat-hold-banner.urgent {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(220, 38, 38, 0.08));
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+  animation: pulseHoldUrgent 1.4s ease-in-out infinite;
+}
+@keyframes pulseHoldUrgent {
+  0%, 100% {
+    border-color: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+  }
+  50% {
+    border-color: #b91c1c;
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.5);
+  }
+}
+.seat-hold-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.seat-hold-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.seat-hold-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #171410;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.seat-hold-banner.urgent .seat-hold-badge {
+  background: #ef4444;
+  color: #fff;
+}
+.seat-hold-heading {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+.seat-hold-timer-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+.seat-hold-timer-label {
+  font-size: 12px;
+  color: #cfc6be;
+  font-weight: 600;
+}
+.seat-hold-timer-val {
+  font-size: 18px;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  color: #fbbf24;
+  letter-spacing: 0.06em;
+}
+.seat-hold-banner.urgent .seat-hold-timer-val {
+  color: #f87171;
+}
+.seat-hold-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 10px;
+}
+.seat-hold-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 999px;
+  transition: width 0.9s linear;
+}
+.seat-hold-banner.urgent .seat-hold-progress-fill {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+.seat-hold-desc {
+  font-size: 12.5px;
+  color: #d1c8c0;
+  line-height: 1.5;
+  margin: 0;
+}
+.seat-hold-desc strong {
+  color: #fbbf24;
+}
+.payment-actions-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.btn-hold-back {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #eee;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-hold-back:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #fff;
+  color: #fff;
+}
+.seat-hold-expired-box {
+  padding: 44px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.seat-hold-expired-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.14);
+  border: 2px solid #ef4444;
+  color: #ef4444;
+  font-size: 32px;
+  display: grid;
+  place-items: center;
+}
+.seat-hold-expired-box h3 {
+  font-size: 24px;
+  color: #fff;
+  margin: 0;
+}
+.seat-hold-expired-box p {
+  color: #c4b9b0;
+  max-width: 460px;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+.seat-conflict-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

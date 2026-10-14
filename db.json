@@ -378,5 +378,15 @@
       "status": "open"
     }
   ],
-  "users": []
+  "users": [
+    {
+      "email": "duypz@gmail.com",
+      "password": "$2a$10$wQ/0Sni7UkgEYEvfhl8qtehxwUbP/GBSPlUGpFYlu6BPvQMVpqpJy",
+      "name": "Nguyễn Duy Phong",
+      "fullName": "Nguyễn Duy Phong",
+      "role": "customer",
+      "createdAt": "2026-10-14T07:45:30.219Z",
+      "id": 1
+    }
+  ]
 }

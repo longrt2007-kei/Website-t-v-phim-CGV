@@ -7,6 +7,7 @@ import {
   releaseBookingSeats,
   money,
   formatDateTime,
+  getSeatHolds,
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
 import { requireAdmin } from './shared/admin-auth.js'
@@ -120,10 +121,12 @@ function render() {
   tickets = getBookings()
   const paid = tickets.filter((t) => (t.paymentStatus || 'Đã thanh toán') === 'Đã thanh toán')
   const revenue = paid.reduce((s, t) => s + Number(t.amount || (t.seats || []).length * 85000), 0)
+  const activeHolds = getSeatHolds()
+  const totalHeldSeats = activeHolds.reduce((s, h) => s + (h.seats || []).length, 0)
   $('#stats').innerHTML = [
     ['Tổng số vé', tickets.length, 'Tất cả đơn đặt vé'],
     ['Đã thanh toán', paid.length, 'Vé đã xác nhận'],
-    ['Tổng ghế', tickets.reduce((s, t) => s + (t.seats || []).length, 0), 'Số ghế đã đặt'],
+    ['Đang giữ chỗ', `${totalHeldSeats} ghế`, `${activeHolds.length} phiên giữ chỗ`],
     ['Doanh thu', money(revenue), 'Theo vé đã thanh toán'],
   ]
     .map(

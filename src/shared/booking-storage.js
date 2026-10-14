@@ -38,3 +38,75 @@ export function releaseBookingSeats(booking) {
 }
 export const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`
 export const formatDateTime = (value) => (value ? new Date(value).toLocaleString('vi-VN') : '—')
+
+export const SEAT_HOLD_STORAGE_KEY = 'cgv_seat_holds_v1'
+export const DEFAULT_HOLD_DURATION_SECONDS = 300 // 5 phút
+
+export function cleanExpiredHolds() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SEAT_HOLD_STORAGE_KEY) || '[]')
+    const now = Date.now()
+    const valid = list.filter((item) => Number(item.expiresAt) > now)
+    if (valid.length !== list.length) {
+      localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(valid))
+    }
+    return valid
+  } catch {
+    return []
+  }
+}
+
+export function getSeatHolds() {
+  return cleanExpiredHolds()
+}
+
+export function saveSeatHolds(holds) {
+  try {
+    localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(holds))
+  } catch {}
+}
+
+export function getHeldSeats(key, excludeHoldId = null) {
+  const holds = getSeatHolds()
+  const seats = []
+  for (const h of holds) {
+    if (h.key === key && (!excludeHoldId || h.id !== excludeHoldId)) {
+      seats.push(...(h.seats || []))
+    }
+  }
+  return [...new Set(seats)]
+}
+
+export function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_DURATION_SECONDS) {
+  const holds = cleanExpiredHolds()
+  const currentHeld = getHeldSeats(key)
+  const conflict = seats.find((s) => currentHeld.includes(s))
+  if (conflict) {
+    return { success: false, conflictSeat: conflict, message: `Ghế ${conflict} vừa được khách khác giữ chỗ!` }
+  }
+  const now = Date.now()
+  const hold = {
+    id: `hold_${now}_${Math.random().toString(36).slice(2, 7)}`,
+    key,
+    seats: [...seats],
+    createdAt: now,
+    expiresAt: now + durationSeconds * 1000,
+    durationSeconds,
+  }
+  holds.push(hold)
+  saveSeatHolds(holds)
+  return { success: true, hold }
+}
+
+export function releaseSeatHold(holdId) {
+  if (!holdId) return
+  const holds = cleanExpiredHolds().filter((h) => h.id !== holdId)
+  saveSeatHolds(holds)
+}
+
+export function getHoldById(holdId) {
+  if (!holdId) return null
+  const holds = cleanExpiredHolds()
+  return holds.find((h) => h.id === holdId) || null
+}
+
