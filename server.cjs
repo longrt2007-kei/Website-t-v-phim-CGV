@@ -1,6 +1,26 @@
 const jsonServer = require('json-server')
 const auth = require('json-server-auth')
 const bcrypt = require('bcryptjs')
+const fs = require('fs')
+const path = require('path')
+
+// Load the admin password from the local, git-ignored .env file when no
+// ADMIN_PASSWORD environment variable was provided by the host.
+if (!process.env.ADMIN_PASSWORD) {
+  const envPath = path.join(__dirname, '.env')
+  if (fs.existsSync(envPath)) {
+    const adminPasswordLine = fs
+      .readFileSync(envPath, 'utf8')
+      .split(/\r?\n/)
+      .find((line) => /^\s*ADMIN_PASSWORD\s*=/.test(line))
+    if (adminPasswordLine) {
+      process.env.ADMIN_PASSWORD = adminPasswordLine
+        .replace(/^\s*ADMIN_PASSWORD\s*=\s*/, '')
+        .trim()
+        .replace(/^(?:"(.*)"|'(.*)')$/, (_, doubleQuoted, singleQuoted) => doubleQuoted ?? singleQuoted)
+    }
+  }
+}
 
 const app = jsonServer.create()
 const router = jsonServer.router('db.json')

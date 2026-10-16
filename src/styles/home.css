@@ -3402,6 +3402,8 @@ body {
 .ticket-success {
   padding: 34px;
   text-align: center;
+  background: #fff !important;
+  color: #111827 !important;
 }
 .ticket-success-icon {
   display: grid;
@@ -3836,7 +3838,7 @@ body::before {
   }
 }
 
-/* Keep ticket text readable on the dark modal. */
+/* Keep ticket confirmation text readable on its white receipt panel. */
 .ticket-success,
 .ticket-success h3,
 .ticket-success p,
@@ -3844,7 +3846,10 @@ body::before {
 .ticket-success .detail-demo-note,
 .ticket-success .ticket-code,
 .ticket-success .ticket-grid span,
-.ticket-success .ticket-grid strong,
+.ticket-success .ticket-grid strong {
+  color: #111827 !important;
+}
+
 .ticket-list-head,
 .ticket-list-head h3,
 .ticket-list-head p,
@@ -3974,9 +3979,9 @@ body::before {
   margin-top: 10px;
 }
 .btn-hold-back {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #eee;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #111827;
   padding: 12px 20px;
   border-radius: 10px;
   font-size: 13px;
@@ -3988,9 +3993,9 @@ body::before {
   gap: 8px;
 }
 .btn-hold-back:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: #fff;
-  color: #fff;
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
 }
 .seat-hold-expired-box {
   padding: 44px 28px;
