@@ -11,6 +11,7 @@ import {
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
 import { requireAdmin } from './shared/admin-auth.js'
+import { generateBarcodeSvg } from './shared/barcode.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
@@ -76,6 +77,7 @@ ${adminNav('tickets')}
   <thead>
   <tr>
   <th>MÃ VÉ</th>
+  <th>MÃ VẠCH</th>
   <th>PHIM</th>
   <th>RẠP / SUẤT</th>
   <th>GHẾ</th>
@@ -148,6 +150,7 @@ function render() {
           <td>
           <strong>${esc(t.code)}</strong>
           </td>
+          <td class="admin-ticket-barcode">${generateBarcodeSvg(t.code, { height: 42, barWidth: 1, showText: true })}</td>
           <td>
           <strong>${esc(t.movie)}</strong>
           </td>

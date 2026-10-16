@@ -244,6 +244,16 @@ td {
   font-size: 12px;
   color: #737985;
 }
+.admin-ticket-barcode {
+  width: 220px;
+  min-width: 220px;
+  padding-inline: 12px;
+}
+.admin-ticket-barcode .cgv-barcode-svg {
+  width: 196px !important;
+  max-width: 196px !important;
+  height: auto !important;
+}
 .movie-cell {
   display: flex;
   align-items: center;

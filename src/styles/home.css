@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
 :root {
   --red: #e60012;
   --red-dark: #b3000e;
@@ -3700,6 +3702,15 @@ body::before {
 }
 
 /* dark booking flow */
+.booking-selects,
+.seat-flow-head,
+.seat-flow-body,
+.payment-body,
+.ticket-success,
+.ticket-list {
+  font-family: 'Be Vietnam Pro', var(--sans);
+}
+
 .movie-modal .modal-card,
 .modal-card {
   background: #0a111d !important;
