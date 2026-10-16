@@ -106,14 +106,23 @@ async function authRequest(path, options = {}) {
   } catch {
     throw new Error('Không kết nối được máy chủ. Vui lòng thử lại sau.')
   }
+  let responseText = ''
   let data = null
   try {
-    data = await response.json()
-  } catch {}
+    responseText = await response.text()
+    data = responseText ? JSON.parse(responseText) : null
+  } catch {
+    data = null
+  }
   if (!response.ok) {
-    const message =
+    const plainText = responseText.trim()
+    const rawMessage =
       (typeof data === 'string' ? data : data?.message || data?.error) ||
-      (response.status === 400 ? 'Thông tin chưa hợp lệ.' : 'Không thể xử lý yêu cầu.')
+      (plainText && !/^<!doctype html|^<html/i.test(plainText) ? plainText : '')
+    const message = rawMessage ||
+      (/proxy error|ECONNREFUSED|ECONNRESET/i.test(responseText)
+        ? 'Máy chủ đăng nhập local chưa chạy. Hãy mở CHAY_WEB.bat để khởi động API.'
+        : `Máy chủ đăng nhập trả lỗi HTTP ${response.status}. Hãy thử lại sau hoặc kiểm tra API.`)
     throw new Error(message)
   }
   return data
