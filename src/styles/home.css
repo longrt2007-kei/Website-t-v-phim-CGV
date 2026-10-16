@@ -3838,16 +3838,20 @@ body::before {
   }
 }
 
-/* Keep ticket confirmation text readable on its white receipt panel. */
+/* Keep ticket confirmation text readable on the dark booking modal. */
 .ticket-success,
 .ticket-success h3,
 .ticket-success p,
 .ticket-success .detail-kicker,
 .ticket-success .detail-demo-note,
-.ticket-success .ticket-code,
-.ticket-success .ticket-grid span,
+.ticket-success .ticket-code {
+  color: #f3f4f6 !important;
+}
+.ticket-success .ticket-grid span {
+  color: #aeb9c9 !important;
+}
 .ticket-success .ticket-grid strong {
-  color: #111827 !important;
+  color: #f3f4f6 !important;
 }
 
 .ticket-list-head,

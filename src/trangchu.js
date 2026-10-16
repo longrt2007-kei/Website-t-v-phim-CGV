@@ -476,7 +476,7 @@ const getScheduleRows = (theaterId, date) =>
 const getMovieTimes = (movieTitle, theaterId, date) =>
   getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
-const renderTicket = (booking, syncWarning = '') => {
+const renderTicket = (booking) => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
   const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
   const currentUser = getCachedUser()
@@ -486,7 +486,6 @@ const renderTicket = (booking, syncWarning = '') => {
     <div class="ticket-success">
       <span class="ticket-success-icon">✓</span>
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
-      <p id="ticketSyncWarning" style="display:none;color:#991b1b;background:#fee2e2;border-radius:8px;padding:10px;margin:10px 0;"></p>
       <h3>${booking.movie}</h3>
       <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
 
@@ -551,12 +550,6 @@ const renderTicket = (booking, syncWarning = '') => {
       </div>
     </div>`
 
-  const syncWarningEl = document.querySelector('#ticketSyncWarning')
-  if (syncWarning && syncWarningEl) {
-    syncWarningEl.textContent = `Vé đang được lưu trên thiết bị này nhưng chưa đồng bộ lên máy chủ. Vui lòng đăng nhập lại hoặc thử lại sau. (${syncWarning})`
-    syncWarningEl.style.display = 'block'
-  }
-
   const emailBtn = document.querySelector('#btnModalSendEmail')
   const emailInput = document.querySelector('#modalTicketEmailInput')
   const emailMsg = document.querySelector('#modalEmailMsg')
@@ -564,52 +557,32 @@ const renderTicket = (booking, syncWarning = '') => {
   const sendEmailAction = async () => {
     const email = emailInput?.value.trim()
     if (!email) return
-    if (emailBtn) {
-      emailBtn.disabled = true
-      emailBtn.textContent = 'Đang gửi...'
+    booking.userEmail = email
+    const all = storageGet('cgv_bookings_v1', [])
+    const idx = all.findIndex((b) => b.code === booking.code)
+    if (idx !== -1) {
+      all[idx].userEmail = email
+      storageSet('cgv_bookings_v1', all)
     }
-    try {
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 3500)
-      await fetch(apiUrl('/send-ticket-email'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, booking }),
-        signal: controller.signal,
-      }).catch(() => null)
-      clearTimeout(timer)
 
-      booking.userEmail = email
-      const all = storageGet('cgv_bookings_v1', [])
-      const idx = all.findIndex((b) => b.code === booking.code)
-      if (idx !== -1) {
-        all[idx].userEmail = email
-        storageSet('cgv_bookings_v1', all)
-      }
-
-      if (emailMsg) {
-        emailMsg.hidden = false
-        emailMsg.style.color = '#34d399'
-        emailMsg.textContent = `✓ Đã gửi thông tin vé và mã vạch thành công tới: ${email}`
-      }
-    } catch {
-      if (emailMsg) {
-        emailMsg.hidden = false
-        emailMsg.style.color = '#34d399'
-        emailMsg.textContent = `✓ Đã ghi nhận gửi vé về email: ${email}`
-      }
-    } finally {
-      if (emailBtn) {
-        emailBtn.disabled = false
-        emailBtn.textContent = 'GỬI LẠI'
-      }
+    const emailBody = [
+      `Vé CGV: ${booking.code}`,
+      `Phim: ${booking.movie}`,
+      `Rạp: ${booking.theaterName || theater?.name || ''}`,
+      `Ngày / giờ: ${booking.date} ${booking.time}`,
+      `Ghế: ${(booking.seats || []).join(', ')}`,
+      `Tổng tiền: ${Number(booking.amount || 0).toLocaleString('vi-VN')}đ`,
+      `Mã vé: ${booking.code}`,
+    ].join('\n')
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Thông tin vé CGV ${booking.code}`)}&body=${encodeURIComponent(emailBody)}`
+    if (emailMsg) {
+      emailMsg.hidden = false
+      emailMsg.style.color = '#34d399'
+      emailMsg.textContent = `Đã mở bản nháp email tới ${email}. Hãy bấm Gửi trong ứng dụng email để gửi vé.`
     }
   }
 
   emailBtn?.addEventListener('click', sendEmailAction)
-  if (initialEmail && initialEmail.includes('@')) {
-    setTimeout(sendEmailAction, 400)
-  }
 }
 
 let currentHoldTimer = null
@@ -855,12 +828,8 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
     storageSet('cgv_seat_state_v1', occupiedMap)
-    try {
-      const savedBooking = await createUserBooking(booking)
-      renderTicket(savedBooking)
-    } catch (error) {
-      renderTicket(booking, error.message)
-    }
+    const savedBooking = await createUserBooking(booking)
+    renderTicket(savedBooking)
   })
 }
 

@@ -2,7 +2,6 @@ import './styles/ticket.css'
 import { generateBarcodeSvg } from './shared/barcode.js'
 import { getBookings, money, formatDateTime, loadUserBooking } from './shared/booking-storage.js'
 import { getCachedUser } from './shared/auth.js'
-import { apiUrl } from './shared/api.js'
 
 async function initTicketPage() {
 const app = document.querySelector('#app')
@@ -213,7 +212,7 @@ app.innerHTML = `
           required 
         />
         <button type="submit" class="btn-send-email" id="btnSubmitEmail">
-          <span>GỬI VÉ VỀ EMAIL</span>
+          <span>TẠO EMAIL VÉ</span>
         </button>
       </form>
       <div id="emailFeedback" class="email-feedback" hidden></div>
@@ -276,44 +275,37 @@ emailForm?.addEventListener('submit', async (e) => {
   if (!email) return
 
   submitBtn.disabled = true
-  submitBtn.innerHTML = '<span>Đang gửi email...</span>'
+  submitBtn.innerHTML = '<span>ĐANG TẠO EMAIL...</span>'
   feedbackEl.hidden = true
 
   try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 3500)
-    const res = await fetch(apiUrl('/send-ticket-email'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        booking,
-        htmlContent: createTicketEmailHtml(booking),
-      }),
-      signal: controller.signal,
-    }).catch(() => null)
-    clearTimeout(timer)
-
-    // Cập nhật email vào vé đã lưu
     booking.userEmail = email
     const index = allBookings.findIndex((b) => b.code === booking.code)
     if (index !== -1) {
       allBookings[index].userEmail = email
-      try {
-        localStorage.setItem('cgv_bookings_v1', JSON.stringify(allBookings))
-      } catch {}
+      localStorage.setItem('cgv_bookings_v1', JSON.stringify(allBookings))
     }
 
+    const emailBody = [
+      `Vé CGV: ${booking.code}`,
+      `Phim: ${booking.movie}`,
+      `Rạp: ${booking.theaterName || booking.theaterId}`,
+      `Ngày / giờ: ${booking.date} ${booking.time}`,
+      `Ghế: ${(booking.seats || []).join(', ')}`,
+      `Tổng tiền: ${money(booking.amount)}`,
+      `Mã vé: ${booking.code}`,
+    ].join('\n')
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Thông tin vé CGV ${booking.code}`)}&body=${encodeURIComponent(emailBody)}`
     feedbackEl.className = 'email-feedback success'
-    feedbackEl.innerHTML = `✓ <strong>Thành công!</strong> Đã gửi thông tin vé và mã vạch tới hộp thư: <strong>${email}</strong>`
+    feedbackEl.textContent = `Đã mở bản nháp email tới ${email}. Hãy bấm Gửi trong ứng dụng email để gửi vé.`
     feedbackEl.hidden = false
-  } catch (err) {
-    feedbackEl.className = 'email-feedback success'
-    feedbackEl.innerHTML = `✓ <strong>Đã ghi nhận!</strong> Thông tin vé và mã vạch đã được gửi tới: <strong>${email}</strong>`
+  } catch {
+    feedbackEl.className = 'email-feedback error'
+    feedbackEl.textContent = 'Không thể mở bản nháp email trên thiết bị này.'
     feedbackEl.hidden = false
   } finally {
     submitBtn.disabled = false
-    submitBtn.innerHTML = '<span>GỬI LẠI VÉ VỀ EMAIL</span>'
+    submitBtn.innerHTML = '<span>TẠO EMAIL VÉ</span>'
   }
 })
 }
