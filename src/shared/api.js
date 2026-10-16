@@ -1,5 +1,13 @@
 import demoDb from '../data/demo-db.json'
 
+// Authentication and ticket records are stored by the shared Render API so
+// customers can use the same account across devices. Local Vite still proxies
+// through its /api route to the API started by CHAY_WEB.bat.
+const LOCAL_API_BASE_URL = '/api'
+const HOSTED_API_BASE_URL = 'https://cgv-cinemas-api.onrender.com'
+export const API_BASE_URL = import.meta.env.DEV ? LOCAL_API_BASE_URL : HOSTED_API_BASE_URL
+export const apiUrl = (path) => `${API_BASE_URL}${String(path).startsWith('/') ? path : `/${path}`}`
+
 // The school-project admin demo stores its editable catalogue in this browser.
 // It deliberately needs no hosted API; changes stay on the current device.
 const STORAGE_PREFIX = 'cgv_demo_admin_'
@@ -15,9 +23,6 @@ function readCollection(resource) {
 function writeCollection(resource, rows) {
   localStorage.setItem(`${STORAGE_PREFIX}${resource}`, JSON.stringify(rows))
 }
-
-export const API_BASE_URL = 'localStorage'
-export const apiUrl = (path) => path
 
 export async function apiRequest(resource, path = '', options = {}) {
   if (!Object.hasOwn(demoDb, resource)) throw new Error(`Không tìm thấy mục ${resource}.`)
