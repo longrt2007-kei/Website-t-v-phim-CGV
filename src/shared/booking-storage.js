@@ -93,22 +93,20 @@ export async function deleteUserBooking(code) {
 }
 
 export async function loadAdminBookings() {
-  return requestBookings('/admin/bookings', { admin: true })
+  return getBookings()
 }
 
 export async function updateAdminBookingStatus(code, paymentStatus) {
-  return requestBookings(`/admin/bookings/${encodeURIComponent(code)}`, {
-    admin: true,
-    method: 'PATCH',
-    body: JSON.stringify({ paymentStatus }),
-  })
+  const bookings = getBookings()
+  const booking = bookings.find((item) => item.code === code)
+  if (!booking) throw new Error('Không tìm thấy vé cần cập nhật.')
+  booking.paymentStatus = paymentStatus
+  saveBookings(bookings)
+  return booking
 }
 
 export async function deleteAdminBooking(code) {
-  await requestBookings(`/admin/bookings/${encodeURIComponent(code)}`, {
-    admin: true,
-    method: 'DELETE',
-  })
+  saveBookings(getBookings().filter((booking) => booking.code !== code))
 }
 export function getSeatMap() {
   try {

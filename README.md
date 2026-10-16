@@ -15,6 +15,7 @@ Hoặc trên Windows chạy `CHAY_WEB.bat`.
 - API + Auth: `http://127.0.0.1:3001`
 
 `npm run dev` chạy đồng thời Vite và API JSON Server có `json-server-auth`.
+Đăng nhập admin demo chạy ngay trên trình duyệt, không cần Render hoặc API: tài khoản `cgvteam`, mật khẩu `2007`. Thông tin nằm trong `src/shared/admin-auth.js`; dữ liệu phim, rạp và suất chiếu được lưu trong `localStorage` của trình duyệt hiện tại.
 
 ## Đăng ký / đăng nhập người dùng
 
@@ -43,11 +44,11 @@ Dữ liệu người dùng được lưu trong collection `users` của `db.json
 - `admin-ve.html`: quản lý vé.
 - `admin-login.html`: đăng nhập quản trị bằng tài khoản có quyền `admin`.
 
-Tài khoản quản trị mẫu:
+Tài khoản quản trị demo:
 
 ```text
 Tài khoản: cgvteam
-Mật khẩu: cấu hình bằng biến môi trường ADMIN_PASSWORD
+Mật khẩu: 2007
 ```
 
 ## Poster
