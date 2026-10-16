@@ -4,6 +4,7 @@ import { getBookings, money, formatDateTime, loadUserBooking } from './shared/bo
 import { getCachedUser } from './shared/auth.js'
 import { apiUrl } from './shared/api.js'
 
+async function initTicketPage() {
 const app = document.querySelector('#app')
 const params = new URLSearchParams(window.location.search)
 const requestedCode = params.get('code')
@@ -315,3 +316,6 @@ emailForm?.addEventListener('submit', async (e) => {
     submitBtn.innerHTML = '<span>GỬI LẠI VÉ VỀ EMAIL</span>'
   }
 })
+}
+
+initTicketPage()
