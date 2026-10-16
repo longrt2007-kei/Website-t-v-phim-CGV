@@ -1,4 +1,5 @@
 import { apiUrl } from './api.js'
+import { syncLocalBookings } from './booking-storage.js'
 
 const TOKEN_KEY = 'cgv_auth_token_v1'
 const USER_KEY = 'cgv_auth_user_v1'
@@ -132,7 +133,9 @@ export async function registerUser({ name, email, password }) {
   })
   if (!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
   const user = setSession(result.accessToken, result.user || null)
-  return result.user ? user : refreshCurrentUser()
+  const savedUser = result.user ? user : await refreshCurrentUser()
+  await syncLocalBookings(savedUser).catch(() => {})
+  return savedUser
 }
 
 export async function loginUser({ email, password }) {
@@ -142,7 +145,9 @@ export async function loginUser({ email, password }) {
   })
   if (!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
   const user = setSession(result.accessToken, result.user || null)
-  return result.user ? user : refreshCurrentUser()
+  const savedUser = result.user ? user : await refreshCurrentUser()
+  await syncLocalBookings(savedUser).catch(() => {})
+  return savedUser
 }
 
 export async function refreshCurrentUser() {

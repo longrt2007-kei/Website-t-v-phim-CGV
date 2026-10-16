@@ -2,12 +2,13 @@ import './admin.css'
 import './admin-dark.css'
 import { adminNav } from './shared/admin-nav.js'
 import {
-  getBookings,
-  saveBookings,
   releaseBookingSeats,
   money,
   formatDateTime,
   getSeatHolds,
+  loadAdminBookings,
+  updateAdminBookingStatus,
+  deleteAdminBooking,
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
 import { requireAdmin } from './shared/admin-auth.js'
@@ -15,7 +16,7 @@ import { generateBarcodeSvg } from './shared/barcode.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
-let tickets = getBookings()
+let tickets = []
 const app = document.querySelector('#app')
 const esc = (s) =>
   String(s ?? '').replace(
@@ -52,7 +53,7 @@ ${adminNav('tickets')}
   <h2>Danh sách vé <span id="count">
   </span>
   </h2>
-  <span>Dữ liệu đặt vé trên trình duyệt hiện tại</span>
+  <span>Dữ liệu vé được lưu trên máy chủ</span>
   </div>
   </div>
 <div class="filters">
@@ -120,7 +121,6 @@ function filtered() {
   )
 }
 function render() {
-  tickets = getBookings()
   const paid = tickets.filter((t) => (t.paymentStatus || 'Đã thanh toán') === 'Đã thanh toán')
   const revenue = paid.reduce((s, t) => s + Number(t.amount || (t.seats || []).length * 85000), 0)
   const activeHolds = getSeatHolds()
@@ -181,33 +181,50 @@ function render() {
     )
     .join('')
 }
+async function refreshTickets() {
+  try {
+    tickets = await loadAdminBookings()
+    render()
+  } catch (error) {
+    $('#empty').hidden = false
+    $('#empty').textContent = `Không tải được danh sách vé: ${error.message}`
+  }
+}
 function status(ticket, value) {
   return (ticket.paymentStatus || 'Đã thanh toán') === value ? 'selected' : ''
 }
 $('#search').addEventListener('input', render)
 $('#status').addEventListener('change', render)
 $('#sort').addEventListener('change', render)
-$('#rows').addEventListener('change', (e) => {
+$('#rows').addEventListener('change', async (e) => {
   const s = e.target.closest('.ticket-status')
   if (!s) return
-  const list = getBookings()
-  const i = list.findIndex((t) => t.code === s.dataset.code)
-  if (i >= 0) {
-    list[i].paymentStatus = s.value
-    saveBookings(list)
+  try {
+    const updated = await updateAdminBookingStatus(s.dataset.code, s.value)
+    tickets = tickets.map((ticket) => (ticket.code === updated.code ? updated : ticket))
     render()
+  } catch (error) {
+    alert(`Không cập nhật được trạng thái vé: ${error.message}`)
+    refreshTickets()
   }
 })
-$('#rows').addEventListener('click', (e) => {
+$('#rows').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-delete]')
   if (!b) return
-  const list = getBookings()
-  const ticket = list.find((t) => t.code === b.dataset.delete)
+  const ticket = tickets.find((t) => t.code === b.dataset.delete)
   if (!ticket) return
   if (!confirm(`Xóa vé ${ticket.code}? Ghế của vé này sẽ được mở lại.`)) return
-  releaseBookingSeats(ticket)
-  saveBookings(list.filter((t) => t.code !== ticket.code))
-  render()
+  try {
+    await deleteAdminBooking(ticket.code)
+    releaseBookingSeats(ticket)
+    tickets = tickets.filter((t) => t.code !== ticket.code)
+    render()
+  } catch (error) {
+    alert(`Không xóa được vé: ${error.message}`)
+  }
 })
-window.addEventListener('storage', render)
-render()
+window.addEventListener('storage', refreshTickets)
+setInterval(() => {
+  if (!document.hidden) refreshTickets()
+}, 30_000)
+refreshTickets()

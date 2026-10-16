@@ -1,6 +1,6 @@
 import './styles/ticket.css'
 import { generateBarcodeSvg } from './shared/barcode.js'
-import { getBookings, money, formatDateTime } from './shared/booking-storage.js'
+import { getBookings, money, formatDateTime, loadUserBooking } from './shared/booking-storage.js'
 import { getCachedUser } from './shared/auth.js'
 import { apiUrl } from './shared/api.js'
 
@@ -10,6 +10,11 @@ const requestedCode = params.get('code')
 
 const allBookings = getBookings()
 let booking = allBookings.find((b) => b.code === requestedCode)
+if (!booking && requestedCode) {
+  try {
+    booking = await loadUserBooking(requestedCode)
+  } catch {}
+}
 
 // Nếu không tìm thấy theo mã trên URL, lấy vé mới nhất
 if (!booking && allBookings.length > 0) {

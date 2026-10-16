@@ -33,6 +33,7 @@ import {
   releaseSeatHold,
   getHeldSeats,
   DEFAULT_HOLD_DURATION_SECONDS,
+  createUserBooking,
 } from './shared/booking-storage.js'
 import { generateBarcodeSvg } from './shared/barcode.js'
 
@@ -475,7 +476,7 @@ const getScheduleRows = (theaterId, date) =>
 const getMovieTimes = (movieTitle, theaterId, date) =>
   getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
-const renderTicket = (booking) => {
+const renderTicket = (booking, syncWarning = '') => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
   const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
   const currentUser = getCachedUser()
@@ -485,6 +486,7 @@ const renderTicket = (booking) => {
     <div class="ticket-success">
       <span class="ticket-success-icon">✓</span>
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
+      <p id="ticketSyncWarning" style="display:none;color:#991b1b;background:#fee2e2;border-radius:8px;padding:10px;margin:10px 0;"></p>
       <h3>${booking.movie}</h3>
       <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
 
@@ -548,6 +550,12 @@ const renderTicket = (booking) => {
         <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.25);" data-close-ticket>HOÀN TẤT</button>
       </div>
     </div>`
+
+  const syncWarningEl = document.querySelector('#ticketSyncWarning')
+  if (syncWarning && syncWarningEl) {
+    syncWarningEl.textContent = `Vé đang được lưu trên thiết bị này nhưng chưa đồng bộ lên máy chủ. Vui lòng đăng nhập lại hoặc thử lại sau. (${syncWarning})`
+    syncWarningEl.style.display = 'block'
+  }
 
   const emailBtn = document.querySelector('#btnModalSendEmail')
   const emailInput = document.querySelector('#modalTicketEmailInput')
@@ -819,7 +827,9 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     openSeatSelection(m, theaterId, date, time)
   })
 
-  document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
+  document.querySelector('#paymentConfirmBtn').addEventListener('click', async (event) => {
+    const confirmButton = event.currentTarget
+    confirmButton.disabled = true
     clearHoldTimer()
     if (hold?.id) releaseSeatHold(hold.id)
     currentHoldId = null
@@ -845,7 +855,12 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
     storageSet('cgv_seat_state_v1', occupiedMap)
-    renderTicket(booking)
+    try {
+      const savedBooking = await createUserBooking(booking)
+      renderTicket(savedBooking)
+    } catch (error) {
+      renderTicket(booking, error.message)
+    }
   })
 }
 

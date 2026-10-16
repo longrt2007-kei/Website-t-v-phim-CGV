@@ -7,6 +7,8 @@ import {
   PAYMENT_BANK,
   PAYMENT_ACCOUNT,
   formatDateTime,
+  loadUserBookings,
+  deleteUserBooking,
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
 if (!requireAuth()) throw new Error('AUTH_REDIRECT')
@@ -16,7 +18,6 @@ const esc = (s) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   )
-const save = (list) => localStorage.setItem('cgv_bookings_v1', JSON.stringify(list))
 const theaterName = (ticket) =>
   ticket.theaterName ||
   theaters.find((theater) => String(theater.id) === String(ticket.theaterId))?.name ||
@@ -138,7 +139,12 @@ document.addEventListener('click', async (e) => {
   if (d && confirm('Xóa vé này khỏi lịch sử trên thiết bị?')) {
     const all = getBookings()
     const removed = all.find((t) => t.code === d.dataset.cancel)
-    save(all.filter((t) => t.code !== d.dataset.cancel))
+    try {
+      await deleteUserBooking(d.dataset.cancel)
+    } catch (error) {
+      notify(`Không xóa được vé: ${error.message}`)
+      return
+    }
     if (removed) {
       try {
         const map = JSON.parse(localStorage.getItem('cgv_seat_state_v1') || '{}')
@@ -153,3 +159,6 @@ document.addEventListener('click', async (e) => {
 })
 render()
 window.addEventListener('storage', render)
+loadUserBookings(getCachedUser()?.id)
+  .then(render)
+  .catch(() => notify('Không kết nối được để tải vé từ máy chủ.'))
