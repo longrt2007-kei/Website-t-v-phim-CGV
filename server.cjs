@@ -81,7 +81,7 @@ app.use(middlewares)
 app.use(jsonServer.bodyParser)
 
 app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' })
+  res.status(200).json({ status: 'ok', apiVersion: 'shared-bookings-v1' })
 })
 
 const readTokenUser = (req) => {
