@@ -15,7 +15,7 @@ Hoặc trên Windows chạy `CHAY_WEB.bat`.
 - API + Auth: `http://127.0.0.1:3001`
 
 `npm run dev` chạy đồng thời Vite và API JSON Server có `json-server-auth`.
-Đăng nhập admin demo chạy ngay trên trình duyệt, không cần Render hoặc API: tài khoản `cgvteam`, mật khẩu `2007`. Thông tin nằm trong `src/shared/admin-auth.js`; dữ liệu phim, rạp và suất chiếu được lưu trong `localStorage` của trình duyệt hiện tại.
+Đăng nhập quản trị demo chạy ngay trên trình duyệt, không cần Render hoặc API: tài khoản `cgvteam`, mật khẩu `2007`. Thông tin nằm trong `src/shared/admin-auth.js`; dữ liệu phim, rạp và suất chiếu được lưu trong `localStorage` của trình duyệt hiện tại.
 
 ## Đăng ký / đăng nhập người dùng
 
@@ -38,11 +38,11 @@ Dữ liệu người dùng được lưu trong collection `users` của `db.json
 - `lichchieu.html` + `src/lichchieu.js`: lịch chiếu.
 - `ve-cua-toi.html` + `src/ve-cua-toi.js`: vé của thành viên.
 - `dang-nhap.html`, `dang-ky.html`, `tai-khoan.html`: tài khoản người dùng.
-- `admin-phim.html`: quản lý phim.
-- `admin-rap.html`: quản lý rạp.
-- `admin-suat-chieu.html`: quản lý suất chiếu.
-- `admin-ve.html`: quản lý vé.
-- `admin-login.html`: đăng nhập quản trị bằng tài khoản có quyền `admin`.
+- `quan-ly-phim.html`: quản lý phim.
+- `quan-ly-rap.html`: quản lý rạp.
+- `quan-ly-suat-chieu.html`: quản lý suất chiếu.
+- `quan-ly-ve.html`: quản lý vé.
+- `dang-nhap-quan-tri.html`: đăng nhập quản trị.
 
 Tài khoản quản trị demo:
 

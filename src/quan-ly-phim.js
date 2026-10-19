@@ -1,6 +1,6 @@
-import './admin.css'
-import './admin-dark.css'
-import { adminNav } from './shared/admin-nav.js'
+﻿import './quan-tri.css'
+import './quan-tri-toi.css'
+import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { apiRequest } from './shared/api.js'
 import { requireAdmin } from './shared/admin-auth.js'
 

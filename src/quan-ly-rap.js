@@ -1,7 +1,7 @@
-import './admin.css'
-import './admin-dark.css'
+﻿import './quan-tri.css'
+import './quan-tri-toi.css'
 import { apiRequest } from './shared/api.js'
-import { adminNav } from './shared/admin-nav.js'
+import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { requireAdmin } from './shared/admin-auth.js'
 if (!requireAdmin()) throw new Error('Admin authentication required')
 const $ = (s) => document.querySelector(s),

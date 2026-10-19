@@ -27,7 +27,7 @@ import {
   renderShowtimes,
   theaterOptions,
   totalTodayShows,
-} from './ui/home-components.js'
+} from './ui/thanh-phan-trang-chu.js'
 import {
   createSeatHold,
   releaseSeatHold,
@@ -78,7 +78,7 @@ document.querySelector('#app').innerHTML = `
       <button type="button" class="icon-btn" id="searchOpen" aria-label="Tìm kiếm">${icons.search}</button>
       <a class="login-btn ticket-history-btn" href="/ve-cua-toi.html">${icons.ticket}<span>VÉ CỦA TÔI</span>
   </a>
-      <a class="login-btn" href="/admin-login.html">${icons.user}<span>ADMIN</span>
+      <a class="login-btn" href="/dang-nhap-quan-tri.html">${icons.user}<span>ADMIN</span>
   </a>
     </div>
   </div>

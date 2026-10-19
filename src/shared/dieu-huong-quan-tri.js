@@ -1,15 +1,15 @@
-import { clearAdminSession, getAdminUser } from './admin-auth.js'
+﻿import { clearAdminSession, getAdminUser } from './admin-auth.js'
 
 export function adminNav(active) {
   const admin = getAdminUser()
   const items = [
-    ['movies', '/admin-phim.html', '▣', 'Quản lý phim'],
-    ['theaters', '/admin-rap.html', '⌂', 'Quản lý rạp'],
-    ['showtimes', '/admin-suat-chieu.html', '◷', 'Quản lý suất chiếu'],
-    ['tickets', '/admin-ve.html', '🎟', 'Quản lý vé'],
+    ['movies', '/quan-ly-phim.html', '▣', 'Quản lý phim'],
+    ['theaters', '/quan-ly-rap.html', '⌂', 'Quản lý rạp'],
+    ['showtimes', '/quan-ly-suat-chieu.html', '◷', 'Quản lý suất chiếu'],
+    ['tickets', '/quan-ly-ve.html', '🎟', 'Quản lý vé'],
   ]
   return `<aside class="sidebar">
-    <a class="brand" href="/admin-phim.html">CGV<small>STUDIO</small>
+    <a class="brand" href="/quan-ly-phim.html">CGV<small>STUDIO</small>
     </a>
     <div>
       <div class="nav-label">KHÔNG GIAN QUẢN TRỊ</div>
@@ -25,5 +25,5 @@ export function adminNav(active) {
 document.addEventListener('click', (event) => {
   if (!event.target.closest('#adminLogoutNav')) return
   clearAdminSession()
-  location.href = '/admin-login.html'
+  location.href = '/dang-nhap-quan-tri.html'
 })

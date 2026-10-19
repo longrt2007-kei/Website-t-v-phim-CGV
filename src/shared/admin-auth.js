@@ -41,11 +41,11 @@ export async function loginAdmin(username, password) {
 export function requireAdmin() {
   if (isAdminAuthenticated()) return true
   const returnPath = `${location.pathname}${location.search}${location.hash}`
-  location.replace(`/admin-login.html?return=${encodeURIComponent(returnPath)}`)
+  location.replace(`/dang-nhap-quan-tri.html?return=${encodeURIComponent(returnPath)}`)
   return false
 }
 
 export function adminReturnUrl() {
   const target = new URLSearchParams(location.search).get('return')
-  return target?.startsWith('/admin-') ? target : '/admin-phim.html'
+  return target?.startsWith('/quan-ly-') ? target : '/quan-ly-phim.html'
 }
