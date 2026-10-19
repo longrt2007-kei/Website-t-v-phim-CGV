@@ -1,3 +1,4 @@
+// Trang chính và luồng đặt vé: chọn suất, chọn/giữ ghế, xác nhận và hiện vé.
 import './styles/home.css'
 import { icons } from './ui/icons.js'
 import {
@@ -45,6 +46,7 @@ const today = now.toLocaleDateString('vi-VN', {
   year: 'numeric',
 })
 
+// Hàm tiện ích đọc/ghi JSON trong localStorage, có giá trị dự phòng khi lỗi.
 const storageGet = (key, fallback = []) => {
   try {
     return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback))
@@ -57,6 +59,7 @@ const storageSet = (key, value) => {
     localStorage.setItem(key, JSON.stringify(value))
   } catch {}
 }
+// Tạo khóa riêng cho sơ đồ ghế của từng phim, rạp, ngày và giờ chiếu.
 const bookingKey = (movie, theaterId, date, time) => `${movie}__${theaterId}__${date}__${time}`
 const ticketPrice = 85000
 
@@ -476,6 +479,7 @@ const getScheduleRows = (theaterId, date) =>
 const getMovieTimes = (movieTitle, theaterId, date) =>
   getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
+// Dựng thẻ vé sau khi đặt thành công, gồm mã vé và mã vạch SVG.
 const renderTicket = (booking) => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
   const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
@@ -594,6 +598,7 @@ const clearHoldTimer = () => {
   }
 }
 
+// Thông báo khi thời gian giữ ghế hết và cho phép người dùng chọn lại.
 const renderHoldExpired = (m, theaterId, date, time, seats) => {
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-hold-expired-box">
@@ -612,6 +617,7 @@ const renderHoldExpired = (m, theaterId, date, time, seats) => {
   })
 }
 
+// Mở sơ đồ ghế, đánh dấu ghế trống/đang giữ/đã đặt và xử lý chọn ghế.
 const openSeatSelection = (m, theaterId, date, time) => {
   clearHoldTimer()
   if (currentHoldId) {
@@ -713,6 +719,7 @@ const openSeatSelection = (m, theaterId, date, time) => {
   })
 }
 
+// Hiển thị bước thanh toán mô phỏng, bộ đếm thời gian và nút xác nhận vé.
 const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key, hold) => {
   clearHoldTimer()
   const theater = theaters.find((t) => t.id === theaterId)
@@ -816,9 +823,11 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     currentHoldId = null
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
+    // Tạo dữ liệu vé sau khi xác nhận, lưu vé và đánh dấu ghế là đã đặt.
     const booking = {
       code,
       userId: currentUser?.id || null,
+      userName: currentUser?.name || '',
       userEmail: currentUser?.email || '',
       movie: m.title,
       theaterId,
@@ -879,6 +888,7 @@ const openModal = (title, mode = 'buy') => {
   state.modalMode = mode
   const defaultTheater =
     theaters.find((t) => getMovieTimes(m.title, t.id, datePlans[0][0]).length) || theaters[0]
+  // Hiển thị giờ chiếu tương ứng với rạp và ngày người dùng chọn.
   const renderBookingTimes = (theaterId, date) => {
     const times = getMovieTimes(m.title, theaterId, date)
     const timesBox = document.querySelector('#bookingTimes')

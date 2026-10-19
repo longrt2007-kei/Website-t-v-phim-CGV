@@ -3,6 +3,7 @@
  * Tạo mã vạch chuẩn cho vé xem phim CGV để quét tại quầy hoặc máy Kiosk tự động.
  */
 
+// Mỗi chuỗi số mô tả độ rộng luân phiên của vạch đen và khoảng trắng.
 // Bảng mẫu mã hóa Code 128 (độ rộng 6 vạch: đen, trắng, đen, trắng, đen, trắng)
 const CODE128_PATTERNS = [
   '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213', // 0-9
@@ -18,12 +19,14 @@ const CODE128_PATTERNS = [
   '114131', '311141', '411131', '211412', '211214', '211232', '2331112' // 100-106 (106 is STOP pattern with 7 bars)
 ]
 
+// Mã bắt đầu cho bộ ký tự Code 128-B và mã kết thúc chuẩn.
 const START_CODE_B = 104
 const STOP_CODE = 106
 
 /**
  * Mã hóa chuỗi ký tự sang danh sách các mã giá trị Code 128
  */
+// Chuyển từng ký tự thành giá trị Code 128-B và tính checksum kiểm tra.
 function encodeStringToCode128(text) {
   const codes = [START_CODE_B]
   let checksum = START_CODE_B
@@ -46,6 +49,7 @@ function encodeStringToCode128(text) {
  * @param {string} text - Mã vé cần tạo barcode (ví dụ 'CGV12345678')
  * @param {object} options - Tùy chỉnh chiều cao, độ rộng, hiển thị chữ
  */
+// Tạo SVG mã vạch từ mã vé để nhúng trực tiếp vào trang HTML.
 export function generateBarcodeSvg(text, options = {}) {
   const cleanText = String(text || '').trim().replace(/[^A-Za-z0-9_-]/g, '') || 'CGV00000000'
   const height = options.height || 75
@@ -53,6 +57,7 @@ export function generateBarcodeSvg(text, options = {}) {
   const showText = options.showText !== false
   const quietZone = 20 // Vùng đệm trắng 2 đầu
 
+  // Ghép các mẫu thành chuỗi đen/trắng rồi vẽ các đoạn đen thành hình chữ nhật SVG.
   const codes = encodeStringToCode128(cleanText)
   let binaryString = ''
 

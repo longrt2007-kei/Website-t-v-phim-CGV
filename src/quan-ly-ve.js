@@ -10,6 +10,7 @@ import {
   loadAdminBookings,
   updateAdminBookingStatus,
   deleteAdminBooking,
+  createBookingDeletionNotification,
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
 import { requireAdmin } from './shared/admin-auth.js'
@@ -17,6 +18,7 @@ import { generateBarcodeSvg } from './shared/barcode.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
+// Trang quản trị vé: thống kê, tìm/lọc vé, xem mã vạch, cập nhật và xóa vé.
 let tickets = []
 const app = document.querySelector('#app')
 const esc = (s) =>
@@ -54,7 +56,7 @@ ${adminNav('tickets')}
   <h2>Danh sách vé <span id="count">
   </span>
   </h2>
-  <span>Dữ liệu vé được lưu trên máy chủ</span>
+  <span>Dữ liệu vé demo được lưu trong trình duyệt</span>
   </div>
   </div>
 <div class="filters">
@@ -83,6 +85,7 @@ ${adminNav('tickets')}
   <th>PHIM</th>
   <th>RẠP / SUẤT</th>
   <th>GHẾ</th>
+  <th>NGƯỜI ĐẶT</th>
   <th>THANH TOÁN</th>
   <th>TỔNG TIỀN</th>
   <th>THỜI GIAN ĐẶT</th>
@@ -102,13 +105,14 @@ ${adminNav('tickets')}
   </main>`
 
 const $ = (s) => document.querySelector(s)
+// Lọc vé theo từ khóa/trạng thái rồi sắp xếp theo lựa chọn trên trang.
 function filtered() {
   const q = $('#search').value.trim().toLowerCase(),
     st = $('#status').value
   const rows = tickets.filter(
     (t) =>
       (!q ||
-        `${t.code} ${t.movie} ${theaterName(t)} ${t.date} ${t.time} ${(t.seats || []).join(' ')}`
+        `${t.code} ${t.movie} ${theaterName(t)} ${t.date} ${t.time} ${(t.seats || []).join(' ')} ${t.userName || ''} ${t.userEmail || ''}`
           .toLowerCase()
           .includes(q)) &&
       (!st || (t.paymentStatus || 'Đã thanh toán') === st),
@@ -121,6 +125,7 @@ function filtered() {
         : String(b.createdAt).localeCompare(String(a.createdAt)),
   )
 }
+// Vẽ thống kê và bảng vé; mã vạch được tạo cho từng mã vé.
 function render() {
   const paid = tickets.filter((t) => (t.paymentStatus || 'Đã thanh toán') === 'Đã thanh toán')
   const revenue = paid.reduce((s, t) => s + Number(t.amount || (t.seats || []).length * 85000), 0)
@@ -159,6 +164,7 @@ function render() {
           <small>${esc(t.date)} · ${esc(t.time)}</small>
           </td>
           <td>${esc((t.seats || []).join(', '))}</td>
+          <td><strong>${esc(t.userName || 'Chưa có tên')}</strong><br><small>${esc(t.userEmail || 'Không có email')}</small><br><small>ID: ${esc(t.userId || '—')}</small></td>
           <td>
           <select class="ticket-status" data-code="${esc(t.code)}">
           <option ${status(t, 'Đã thanh toán')}>Đã thanh toán</option>
@@ -182,10 +188,12 @@ function render() {
     )
     .join('')
 }
+// Làm mới lượt giữ ghế để cập nhật số ghế đang bị giữ.
 async function refreshSeatHolds() {
   await loadSeatHolds()
   render()
 }
+// Tải lại danh sách vé và hiển thị thông báo nếu xảy ra lỗi.
 async function refreshTickets() {
   try {
     tickets = await loadAdminBookings()
@@ -201,6 +209,7 @@ function status(ticket, value) {
 $('#search').addEventListener('input', render)
 $('#status').addEventListener('change', render)
 $('#sort').addEventListener('change', render)
+// Lưu trạng thái thanh toán khi quản trị viên thay đổi lựa chọn.
 $('#rows').addEventListener('change', async (e) => {
   const s = e.target.closest('.ticket-status')
   if (!s) return
@@ -213,6 +222,7 @@ $('#rows').addEventListener('change', async (e) => {
     refreshTickets()
   }
 })
+// Xóa vé theo xác nhận và mở lại các ghế thuộc vé đó.
 $('#rows').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-delete]')
   if (!b) return
@@ -221,6 +231,7 @@ $('#rows').addEventListener('click', async (e) => {
   if (!confirm(`Xóa vé ${ticket.code}? Ghế của vé này sẽ được mở lại.`)) return
   try {
     await deleteAdminBooking(ticket.code)
+    createBookingDeletionNotification(ticket)
     releaseBookingSeats(ticket)
     tickets = tickets.filter((t) => t.code !== ticket.code)
     render()

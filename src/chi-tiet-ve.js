@@ -1,9 +1,11 @@
+// Trang vé điện tử: thông tin vé, mã vạch/QR, in vé và tạo bản nháp email.
 import './styles/ticket.css'
 import { generateBarcodeSvg } from './shared/barcode.js'
 import { getBookings, money, formatDateTime, loadUserBooking } from './shared/booking-storage.js'
 import { getCachedUser } from './shared/auth.js'
 
 async function initTicketPage() {
+// Đọc mã vé từ URL và tìm vé tương ứng trong localStorage.
 const app = document.querySelector('#app')
 const params = new URLSearchParams(window.location.search)
 const requestedCode = params.get('code')
@@ -41,6 +43,7 @@ if (!booking) {
 
 const currentUser = getCachedUser()
 const defaultEmail = booking.userEmail || currentUser?.email || ''
+// Mã vạch là SVG tạo tại chỗ; QR là ảnh do dịch vụ tạo QR bên ngoài cung cấp.
 const barcodeSvg = generateBarcodeSvg(booking.code, { height: 80, barWidth: 2, showText: true })
 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=8&data=${encodeURIComponent(
   `${window.location.origin}/chi-tiet-ve.html?code=${booking.code}`,
@@ -49,6 +52,7 @@ const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&marg
 /**
  * Tạo nội dung HTML thư xác nhận gửi về email
  */
+// Tạo HTML thư xác nhận để hiển thị trong cửa sổ xem trước.
 function createTicketEmailHtml(b) {
   return `
     <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;color:#1e293b;">
@@ -108,6 +112,7 @@ function createTicketEmailHtml(b) {
   `
 }
 
+// Dựng giao diện vé điện tử, thông tin đặt chỗ và các nút thao tác.
 app.innerHTML = `
 <div class="ticket-page-wrap">
   <!-- Thanh điều hướng -->
@@ -246,12 +251,12 @@ app.innerHTML = `
 </div>
 `
 
-// Xử lý in vé
+// Mở hộp thoại in của trình duyệt; có thể chọn máy in hoặc lưu PDF.
 document.querySelector('#btnPrintTicket')?.addEventListener('click', () => {
   window.print()
 })
 
-// Xử lý modal xem trước email
+// Mở và đóng cửa sổ xem trước nội dung email.
 const emailModal = document.querySelector('#emailModal')
 document.querySelector('#btnPreviewEmail')?.addEventListener('click', () => {
   emailModal.hidden = false
@@ -263,7 +268,7 @@ emailModal?.addEventListener('click', (e) => {
   if (e.target === emailModal) emailModal.hidden = true
 })
 
-// Xử lý gửi email vé
+// Tạo bản nháp trong ứng dụng email mặc định; người dùng tự xác nhận gửi.
 const emailForm = document.querySelector('#emailSendForm')
 const feedbackEl = document.querySelector('#emailFeedback')
 const emailInput = document.querySelector('#targetEmailInput')

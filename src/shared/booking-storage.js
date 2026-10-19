@@ -1,9 +1,14 @@
+// Module lưu trữ dùng chung cho vé, sơ đồ ghế và ghế đang được giữ tạm.
+// Dữ liệu bản demo nằm trong localStorage của trình duyệt.
+// Tên các khóa lưu trữ và thông tin thanh toán mặc định.
 export const BOOKING_STORAGE_KEY = 'cgv_bookings_v1'
 export const SEAT_STORAGE_KEY = 'cgv_seat_state_v1'
+export const BOOKING_NOTIFICATIONS_KEY = 'cgv_booking_notifications_v1'
 export const PAYMENT_BANK = 'BIDV'
 export const PAYMENT_ACCOUNT = '8855252740'
 export const TICKET_PRICE = 85000
 
+// Đọc danh sách vé; trả về mảng rỗng nếu chưa có dữ liệu hoặc JSON bị lỗi.
 export function getBookings() {
   try {
     return JSON.parse(localStorage.getItem(BOOKING_STORAGE_KEY) || '[]')
@@ -11,19 +16,23 @@ export function getBookings() {
     return []
   }
 }
+// Ghi danh sách vé vào localStorage.
 export function saveBookings(bookings) {
   localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookings))
 }
 
+// Lấy vé của một tài khoản; nếu không truyền ID thì lấy tất cả vé.
 export async function loadUserBookings(userId = null) {
   const bookings = getBookings()
   return userId == null ? bookings : bookings.filter((booking) => String(booking.userId) === String(userId))
 }
 
+// Tìm một vé theo mã vé.
 export async function loadUserBooking(code) {
   return getBookings().find((booking) => booking.code === code) || null
 }
 
+// Gắn vé chưa có chủ sở hữu với tài khoản hiện đang đăng nhập.
 export async function syncLocalBookings(user) {
   if (!user?.id) return
   const bookings = getBookings()
@@ -38,15 +47,18 @@ export async function syncLocalBookings(user) {
   if (changed) saveBookings(bookings)
 }
 
+// Lưu vé mới lên đầu danh sách và thay thế bản ghi trùng mã vé.
 export async function createUserBooking(booking) {
   saveBookings([booking, ...getBookings().filter((item) => item.code !== booking.code)])
   return booking
 }
 
+// Xóa vé theo mã trong khu vực người dùng.
 export async function deleteUserBooking(code) {
   saveBookings(getBookings().filter((booking) => booking.code !== code))
 }
 
+// Các hàm quản trị: tải, cập nhật trạng thái và xóa vé.
 export async function loadAdminBookings() {
   return getBookings()
 }
@@ -63,6 +75,64 @@ export async function updateAdminBookingStatus(code, paymentStatus) {
 export async function deleteAdminBooking(code) {
   saveBookings(getBookings().filter((booking) => booking.code !== code))
 }
+
+// Ghi thông báo khi admin xóa vé, gắn thông báo với ID/email của người mua.
+export function createBookingDeletionNotification(booking) {
+  if (!booking?.userId && !booking?.userEmail) return null
+  let notifications = []
+  try {
+    notifications = JSON.parse(localStorage.getItem(BOOKING_NOTIFICATIONS_KEY) || '[]')
+  } catch {}
+  if (!Array.isArray(notifications)) notifications = []
+  const notification = {
+    id: `notice_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    userId: booking.userId == null ? '' : String(booking.userId),
+    userEmail: String(booking.userEmail || '').toLowerCase(),
+    type: 'booking-deleted',
+    title: 'Vé đã bị hủy',
+    message: `Vé ${booking.code} cho phim “${booking.movie}” (${booking.date} · ${booking.time}) đã bị quản trị viên xóa. Nếu cần hỗ trợ, vui lòng liên hệ rạp.`,
+    bookingCode: booking.code,
+    createdAt: new Date().toISOString(),
+    read: false,
+  }
+  try {
+    localStorage.setItem(BOOKING_NOTIFICATIONS_KEY, JSON.stringify([notification, ...notifications]))
+  } catch {
+    return null
+  }
+  return notification
+}
+
+// Lấy thông báo chỉ dành cho tài khoản đang đăng nhập (đối chiếu ID hoặc email).
+export function loadUserNotifications(user) {
+  if (!user) return []
+  let notifications = []
+  try {
+    notifications = JSON.parse(localStorage.getItem(BOOKING_NOTIFICATIONS_KEY) || '[]')
+  } catch {}
+  if (!Array.isArray(notifications)) return []
+  const email = String(user.email || '').toLowerCase()
+  return notifications.filter((notice) =>
+    (user.id != null && notice.userId && String(notice.userId) === String(user.id)) ||
+    (email && notice.userEmail === email),
+  )
+}
+
+// Đánh dấu các thông báo của tài khoản hiện tại là đã đọc.
+export function markUserNotificationsRead(user) {
+  if (!user) return
+  const owned = new Set(loadUserNotifications(user).map((notice) => notice.id))
+  let notifications = []
+  try {
+    notifications = JSON.parse(localStorage.getItem(BOOKING_NOTIFICATIONS_KEY) || '[]')
+  } catch {}
+  if (!Array.isArray(notifications)) return
+  localStorage.setItem(
+    BOOKING_NOTIFICATIONS_KEY,
+    JSON.stringify(notifications.map((notice) => owned.has(notice.id) ? { ...notice, read: true } : notice)),
+  )
+}
+// Đọc trạng thái ghế đã đặt theo từng suất chiếu.
 export function getSeatMap() {
   try {
     return JSON.parse(localStorage.getItem(SEAT_STORAGE_KEY) || '{}')
@@ -76,6 +146,7 @@ export function saveSeatMap(map) {
 export function bookingKey(b) {
   return `${b.movie}__${b.theaterId}__${b.date}__${b.time}`
 }
+// Mở lại các ghế thuộc vé khi vé bị xóa.
 export function releaseBookingSeats(booking) {
   const map = getSeatMap(),
     key = bookingKey(booking)
@@ -88,6 +159,7 @@ export function releaseBookingSeats(booking) {
 export const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`
 export const formatDateTime = (value) => (value ? new Date(value).toLocaleString('vi-VN') : '—')
 
+// Khóa lưu các ghế giữ tạm; danh sách shared được các tab cùng trình duyệt theo dõi.
 export const SEAT_HOLD_STORAGE_KEY = 'cgv_seat_holds_v1'
 const HOLDS_COLLECTION_KEY = 'cgv_demo_shared_holds_v1'
 export const DEFAULT_HOLD_DURATION_SECONDS = 300 // 5 phút
@@ -107,6 +179,7 @@ function writeSharedHolds(holds) {
   } catch {}
 }
 
+// Xóa các lượt giữ đã hết hạn rồi đồng bộ danh sách còn hiệu lực.
 export function cleanExpiredHolds() {
   try {
     const now = Date.now()
@@ -133,6 +206,7 @@ export function saveSeatHolds(holds) {
   try { localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(holds)) } catch {}
 }
 
+// Lấy các ghế đang giữ của một suất chiếu, có thể bỏ qua lượt giữ của chính mình.
 export function getHeldSeats(key, excludeHoldId = null) {
   const holds = getSeatHolds()
   const seats = []
@@ -144,6 +218,7 @@ export function getHeldSeats(key, excludeHoldId = null) {
   return [...new Set(seats)]
 }
 
+// Giữ ghế tạm; trả về xung đột nếu ghế đã bị một lượt giữ khác chiếm.
 export async function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_DURATION_SECONDS) {
   const holds = cleanExpiredHolds()
   const currentHeld = getHeldSeats(key)
@@ -165,12 +240,14 @@ export async function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_
   return { success: true, hold }
 }
 
+// Hủy lượt giữ để các khách khác có thể chọn những ghế đó.
 export async function releaseSeatHold(holdId) {
   if (!holdId) return
   const holds = cleanExpiredHolds().filter((h) => h.id !== holdId)
   saveSeatHolds(holds)
 }
 
+// Tra cứu lượt giữ ghế bằng mã lượt giữ.
 export function getHoldById(holdId) {
   if (!holdId) return null
   const holds = cleanExpiredHolds()

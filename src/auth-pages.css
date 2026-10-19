@@ -261,6 +261,61 @@ a {
   color: #738198;
   margin-bottom: 5px;
 }
+.account-notifications {
+  margin-top: 24px;
+  padding: 18px;
+  background: #080e1a;
+  border: 1px solid #ffffff0d;
+  border-radius: 14px;
+}
+.account-notifications-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.account-notifications-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.account-notifications-head p,
+.account-notice-empty {
+  margin: 5px 0 0;
+  color: #8e9ab0;
+  font-size: 13px;
+}
+.account-notifications-head button {
+  border: 1px solid #ffffff20;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #fff;
+  background: #111a2c;
+  cursor: pointer;
+}
+.account-notice {
+  padding: 13px;
+  border: 1px solid #ffffff10;
+  border-radius: 10px;
+  margin-top: 9px;
+}
+.account-notice.unread {
+  border-color: #e3263666;
+  background: #e3263610;
+}
+.account-notice strong,
+.account-notice small {
+  display: block;
+}
+.account-notice small {
+  color: #738198;
+  margin-top: 4px;
+}
+.account-notice p {
+  margin: 9px 0 0;
+  color: #c8d1e0;
+  line-height: 1.5;
+}
 .account-actions {
   display: flex;
   gap: 12px;

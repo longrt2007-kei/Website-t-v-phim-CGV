@@ -1,3 +1,4 @@
+// Trang lịch sử vé: tìm kiếm, xem chi tiết, sao chép mã, in và xóa vé.
 import './pages.css'
 import { requireAuth, getCachedUser } from './shared/auth.js'
 import { mountUserNav } from './shared/user-nav.js'
@@ -11,6 +12,7 @@ import {
   deleteUserBooking,
 } from './shared/booking-storage.js'
 import { theaters } from './data/home-catalog.js'
+// Chỉ cho phép vào trang khi người dùng đã đăng nhập.
 if (!requireAuth()) throw new Error('AUTH_REDIRECT')
 const app = document.querySelector('#app')
 const esc = (s) =>
@@ -24,6 +26,7 @@ const theaterName = (ticket) =>
   ticket.theaterId ||
   'CGV Cinemas'
 let query = ''
+// Dựng khung giao diện, phần tìm kiếm và danh sách vé.
 app.innerHTML = `<header class="simple-header">
   <div class="simple-nav">
   <a class="simple-logo" href="/trangchu.html">CGV</a>
@@ -64,6 +67,7 @@ function notify(text) {
   clearTimeout(notify.t)
   notify.t = setTimeout(() => toast.classList.remove('show'), 1800)
 }
+// Lọc vé theo tài khoản và từ khóa, sau đó dựng các thẻ vé lên trang.
 function render() {
   const user = getCachedUser()
   const all = getBookings().filter((t) => String(t.userId) === String(user?.id))
@@ -125,6 +129,7 @@ search.addEventListener('input', (e) => {
   query = e.target.value
   render()
 })
+// Xử lý sao chép mã vé và xóa vé; khi xóa thì giải phóng ghế đã đặt.
 document.addEventListener('click', async (e) => {
   const c = e.target.closest('[data-copy]')
   if (c) {
@@ -157,6 +162,7 @@ document.addEventListener('click', async (e) => {
     notify('Đã xóa vé khỏi lịch sử')
   }
 })
+// Hiển thị dữ liệu ban đầu và cập nhật khi một tab khác thay đổi localStorage.
 render()
 window.addEventListener('storage', render)
 loadUserBookings(getCachedUser()?.id)
