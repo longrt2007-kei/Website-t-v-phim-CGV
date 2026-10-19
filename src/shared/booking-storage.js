@@ -89,16 +89,31 @@ export const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ
 export const formatDateTime = (value) => (value ? new Date(value).toLocaleString('vi-VN') : '—')
 
 export const SEAT_HOLD_STORAGE_KEY = 'cgv_seat_holds_v1'
+const HOLDS_COLLECTION_KEY = 'cgv_demo_shared_holds_v1'
 export const DEFAULT_HOLD_DURATION_SECONDS = 300 // 5 phút
+
+function readSharedHolds() {
+  try {
+    return JSON.parse(localStorage.getItem(HOLDS_COLLECTION_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function writeSharedHolds(holds) {
+  try {
+    localStorage.setItem(HOLDS_COLLECTION_KEY, JSON.stringify(holds))
+    window.dispatchEvent(new CustomEvent('cgv-seat-holds-change'))
+  } catch {}
+}
 
 export function cleanExpiredHolds() {
   try {
-    const list = JSON.parse(localStorage.getItem(SEAT_HOLD_STORAGE_KEY) || '[]')
     const now = Date.now()
+    const list = readSharedHolds()
     const valid = list.filter((item) => Number(item.expiresAt) > now)
-    if (valid.length !== list.length) {
-      localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(valid))
-    }
+    if (valid.length !== list.length) writeSharedHolds(valid)
+    localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(valid))
     return valid
   } catch {
     return []
@@ -109,10 +124,13 @@ export function getSeatHolds() {
   return cleanExpiredHolds()
 }
 
+export async function loadSeatHolds() {
+  return cleanExpiredHolds()
+}
+
 export function saveSeatHolds(holds) {
-  try {
-    localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(holds))
-  } catch {}
+  writeSharedHolds(holds)
+  try { localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(holds)) } catch {}
 }
 
 export function getHeldSeats(key, excludeHoldId = null) {
@@ -126,7 +144,7 @@ export function getHeldSeats(key, excludeHoldId = null) {
   return [...new Set(seats)]
 }
 
-export function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_DURATION_SECONDS) {
+export async function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_DURATION_SECONDS) {
   const holds = cleanExpiredHolds()
   const currentHeld = getHeldSeats(key)
   const conflict = seats.find((s) => currentHeld.includes(s))
@@ -147,7 +165,7 @@ export function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_DURATI
   return { success: true, hold }
 }
 
-export function releaseSeatHold(holdId) {
+export async function releaseSeatHold(holdId) {
   if (!holdId) return
   const holds = cleanExpiredHolds().filter((h) => h.id !== holdId)
   saveSeatHolds(holds)

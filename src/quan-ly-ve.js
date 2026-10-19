@@ -6,6 +6,7 @@ import {
   money,
   formatDateTime,
   getSeatHolds,
+  loadSeatHolds,
   loadAdminBookings,
   updateAdminBookingStatus,
   deleteAdminBooking,
@@ -181,6 +182,10 @@ function render() {
     )
     .join('')
 }
+async function refreshSeatHolds() {
+  await loadSeatHolds()
+  render()
+}
 async function refreshTickets() {
   try {
     tickets = await loadAdminBookings()
@@ -223,8 +228,22 @@ $('#rows').addEventListener('click', async (e) => {
     alert(`Không xóa được vé: ${error.message}`)
   }
 })
-window.addEventListener('storage', refreshTickets)
+window.addEventListener('storage', (event) => {
+  if (!event.key || event.key === 'cgv_demo_shared_holds_v1' || event.key === 'cgv_seat_holds_v1') {
+    render()
+  }
+  if (!event.key || event.key === 'cgv_bookings_v1') refreshTickets()
+})
+window.addEventListener('cgv-seat-holds-change', render)
+setInterval(() => {
+  if (!document.hidden) refreshSeatHolds()
+}, 3000)
+window.addEventListener('focus', refreshSeatHolds)
+window.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshSeatHolds()
+})
 setInterval(() => {
   if (!document.hidden) refreshTickets()
 }, 30_000)
 refreshTickets()
+refreshSeatHolds()

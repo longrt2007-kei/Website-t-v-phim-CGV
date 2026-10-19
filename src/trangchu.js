@@ -688,16 +688,24 @@ const openSeatSelection = (m, theaterId, date, time) => {
       document.querySelector('#confirmSeatBtn').disabled = selected.size === 0
     }),
   )
-  document.querySelector('#confirmSeatBtn').addEventListener('click', () => {
+  document.querySelector('#confirmSeatBtn').addEventListener('click', async () => {
     const seats = [...selected]
-    const holdRes = createSeatHold(key, seats, DEFAULT_HOLD_DURATION_SECONDS)
+    const button = document.querySelector('#confirmSeatBtn')
+    button.disabled = true
+    button.textContent = 'ĐANG KIỂM TRA GHẾ…'
+    const holdRes = await createSeatHold(key, seats, DEFAULT_HOLD_DURATION_SECONDS)
     if (!holdRes.success) {
       const alertBox = document.querySelector('#seatConflictAlert')
       if (alertBox) {
         alertBox.textContent = `⚠️ ${holdRes.message || 'Một số ghế bạn chọn vừa có khách khác giữ chỗ! Vui lòng chọn ghế khác.'}`
         alertBox.hidden = false
       }
-      setTimeout(() => openSeatSelection(m, theaterId, date, time), 1200)
+      if (/khách khác giữ chỗ/i.test(holdRes.message || '')) {
+        setTimeout(() => openSeatSelection(m, theaterId, date, time), 1200)
+      } else {
+        button.disabled = false
+        button.textContent = 'XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)'
+      }
       return
     }
     currentHoldId = holdRes.hold.id
