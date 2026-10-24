@@ -73,8 +73,14 @@ export async function deleteUserBooking(code) {
 }
 
 // Các hàm quản trị: tải, cập nhật trạng thái và xóa vé.
+const getAdminApiToken = () => {
+  const adminToken = localStorage.getItem('cgv_admin_token_v1') || ''
+  if (localStorage.getItem('cgv_admin_session_v1') === 'signed-in') return adminToken
+  return localStorage.getItem('cgv_auth_token_v1') || ''
+}
+
 export async function loadAdminBookings() {
-  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  const token = getAdminApiToken()
   if (token) {
     const response = await fetch(apiUrl('/admin/bookings'), { headers: { Authorization: `Bearer ${token}` } })
     const result = await response.json().catch(() => [])
@@ -86,7 +92,7 @@ export async function loadAdminBookings() {
 }
 
 export async function updateAdminBookingStatus(code, paymentStatus) {
-  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  const token = getAdminApiToken()
   if (token) {
     const response = await fetch(apiUrl(`/admin/bookings/${encodeURIComponent(code)}`), {
       method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -106,7 +112,7 @@ export async function updateAdminBookingStatus(code, paymentStatus) {
 }
 
 export async function deleteAdminBooking(code) {
-  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  const token = getAdminApiToken()
   if (token) {
     const response = await fetch(apiUrl(`/admin/bookings/${encodeURIComponent(code)}`), {
       method: 'DELETE', headers: { Authorization: `Bearer ${token}` },

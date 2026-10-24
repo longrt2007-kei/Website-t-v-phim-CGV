@@ -201,6 +201,25 @@ const requireAdminUser = (req, res) => {
   return session
 }
 
+app.post('/admin-demo-login', (req, res) => {
+  const username = String(req.body?.username || '').trim().toLowerCase()
+  const password = String(req.body?.password || '')
+  const admin = users.find({ role: 'admin' }).value()
+  const validPassword = adminPassword ? password === adminPassword : password === '2007'
+  if (username !== adminUsername || !validPassword || !admin) {
+    return res.status(401).json({ message: 'Tài khoản hoặc mật khẩu quản trị không hợp lệ.' })
+  }
+  const accessToken = jwt.sign(
+    { sub: String(admin.id), email: admin.email || adminEmail },
+    JWT_SECRET_KEY,
+    { expiresIn: '12h' },
+  )
+  res.json({
+    accessToken,
+    user: { id: String(admin.id), name: admin.name || 'Quản trị viên', email: admin.email || adminEmail, role: 'admin' },
+  })
+})
+
 app.get('/my-bookings', (req, res) => {
   const session = requireUser(req, res)
   if (!session) return
