@@ -1,4 +1,5 @@
 import { apiUrl } from './api.js'
+import { syncLocalBookings } from './booking-storage.js'
 
 const TOKEN_KEY = 'cgv_auth_token_v1'
 const USER_KEY = 'cgv_auth_user_v1'
@@ -25,7 +26,6 @@ const normalizeUser = (user) =>
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || ''
 }
-
 export function getCachedUser() {
   return parseJson(localStorage.getItem(USER_KEY), null)
 }
@@ -104,9 +104,8 @@ async function authRequest(path, options = {}) {
       headers: authHeaders(options.headers || {}),
     })
   } catch {
-    throw new Error('Không kết nối được máy chủ. Vui lòng kiểm tra API và thử lại.')
+    throw new Error('Không kết nối được máy chủ. Vui lòng thử lại sau.')
   }
-
   let responseText = ''
   let data = null
   try {
@@ -115,7 +114,6 @@ async function authRequest(path, options = {}) {
   } catch {
     data = null
   }
-
   if (!response.ok) {
     const plainText = responseText.trim()
     const rawMessage =
@@ -123,59 +121,42 @@ async function authRequest(path, options = {}) {
       (plainText && !/^<!doctype html|^<html/i.test(plainText) ? plainText : '')
     const message = rawMessage ||
       (/proxy error|ECONNREFUSED|ECONNRESET/i.test(responseText)
-        ? 'Máy chủ đăng nhập local chưa chạy. Hãy khởi động API rồi thử lại.'
-        : `Máy chủ đăng nhập trả lỗi HTTP ${response.status}. Vui lòng thử lại sau.`)
+        ? 'Máy chủ đăng nhập local chưa chạy. Hãy mở CHAY_WEB.bat để khởi động API.'
+        : `Máy chủ đăng nhập trả lỗi HTTP ${response.status}. Hãy thử lại sau hoặc kiểm tra API.`)
     throw new Error(message)
   }
   return data
 }
 
-function apiErrorMessage(message, status, action) {
-  if (status === 409 || /email already exists|email.*(already|exists|taken)/i.test(message)) {
-    return 'Email này đã được đăng ký.'
-  }
-  if (/cannot find user|incorrect password|invalid password/i.test(message)) {
-    return 'Email hoặc mật khẩu chưa đúng.'
-  }
-  if (status === 400) return 'Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.'
-  return message || `Không thể ${action} lúc này. Vui lòng thử lại sau.`
+export async function registerUser({ name, email, password }) {
+  const result = await authRequest('/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      fullName: name,
+      email: email.trim().toLowerCase(),
+      password,
+      role: 'customer',
+      createdAt: new Date().toISOString(),
+    }),
+  })
+  if (!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
+  const user = setSession(result.accessToken, result.user || null)
+  const savedUser = result.user ? user : await refreshCurrentUser()
+  await syncLocalBookings(savedUser).catch(() => {})
+  return savedUser
 }
 
-async function submitCredentials(path, payload, action) {
-  try {
-    const result = await authRequest(path, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    if (!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
-    const user = setSession(result.accessToken, result.user || null)
-    return result.user ? user : refreshCurrentUser()
-  } catch (error) {
-    error.message = apiErrorMessage(error.message, error.status, action)
-    throw error
-  }
-}
-
-export function registerUser({ name, email, password }) {
-  const cleanName = String(name || '').trim()
-  const cleanEmail = String(email || '').trim().toLowerCase()
-  if (cleanName.length < 2) throw new Error('Vui lòng nhập họ tên có ít nhất 2 ký tự.')
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) throw new Error('Vui lòng nhập email hợp lệ.')
-  if (String(password || '').length < 6) throw new Error('Mật khẩu cần có ít nhất 6 ký tự.')
-  return submitCredentials('/register', {
-    name: cleanName,
-    fullName: cleanName,
-    email: cleanEmail,
-    password,
-    role: 'customer',
-    createdAt: new Date().toISOString(),
-  }, 'đăng ký')
-}
-
-export function loginUser({ email, password }) {
-  const cleanEmail = String(email || '').trim().toLowerCase()
-  if (!cleanEmail || !password) throw new Error('Vui lòng nhập email và mật khẩu.')
-  return submitCredentials('/login', { email: cleanEmail, password }, 'đăng nhập')
+export async function loginUser({ email, password }) {
+  const result = await authRequest('/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+  })
+  if (!result?.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
+  const user = setSession(result.accessToken, result.user || null)
+  const savedUser = result.user ? user : await refreshCurrentUser()
+  await syncLocalBookings(savedUser).catch(() => {})
+  return savedUser
 }
 
 export async function refreshCurrentUser() {
@@ -204,15 +185,7 @@ export async function refreshCurrentUser() {
 export function returnUrl(defaultUrl = '/trangchu.html') {
   const params = new URLSearchParams(location.search)
   const target = params.get('return')
-  if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) {
-    return defaultUrl
-  }
-  try {
-    const parsed = new URL(target, location.origin)
-    return parsed.origin === location.origin ? `${parsed.pathname}${parsed.search}${parsed.hash}` : defaultUrl
-  } catch {
-    return defaultUrl
-  }
+  return target && target.startsWith('/') ? target : defaultUrl
 }
 
 export function loginUrl(target = location.pathname + location.search + location.hash) {

@@ -21,14 +21,16 @@
 
 ## Dữ liệu / giao diện trang chủ
 - `src/data/home-catalog.js`: seed catalog, rạp, lịch chiếu, thông tin phim.
-- `src/ui/home-components.js`: card phim, poster, lịch chiếu.
+- `src/ui/thanh-phan-trang-chu.js`: card phim, poster, lịch chiếu.
 - `src/ui/icons.js`: icon dùng chung.
 
 ## Admin
-- `admin-phim.html` + `src/admin-phim.js`
-- `admin-rap.html` + `src/admin-rap.js`
-- `admin-suat-chieu.html` + `src/admin-suat-chieu.js`
-- `admin-ve.html` + `src/admin-ve.js`
+- `dang-nhap-quan-tri.html` + `src/dang-nhap-quan-tri.js`
+- `quan-ly-phim.html` + `src/quan-ly-phim.js`
+- `quan-ly-rap.html` + `src/quan-ly-rap.js`
+- `quan-ly-suat-chieu.html` + `src/quan-ly-suat-chieu.js`
+- `quan-ly-ve.html` + `src/quan-ly-ve.js`
+- `src/shared/dieu-huong-quan-tri.js`: điều hướng giữa các trang quản trị.
 
 ## API
 - `db.json`: `movies`, `theaters`, `showtimes`, `users`.

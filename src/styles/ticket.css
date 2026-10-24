@@ -1,0 +1,489 @@
+/* CGV Cinemas E-Ticket Stylesheet */
+:root {
+  --cgv-red: #d71920;
+  --cgv-dark-red: #a31117;
+  --cgv-gold: #eab308;
+  --bg-dark: #07090d;
+  --bg-card: #11151c;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-page-wrap {
+  width: min(920px, 94vw);
+  margin: 30px auto 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Top Navigation / Breadcrumbs */
+.ticket-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.ticket-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ticket-nav-links a {
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ticket-nav-links a:hover {
+  color: #fff;
+}
+
+.ticket-nav-logo {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--cgv-red);
+  letter-spacing: 0.05em;
+}
+
+/* Main Ticket Card */
+.eticket-card {
+  color-scheme: light;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+/* Header of Ticket */
+.eticket-header {
+  background: linear-gradient(135deg, #182033 0%, #0d1220 100%);
+  color: #fff;
+  padding: 24px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--cgv-red);
+}
+
+.eticket-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.eticket-logo-badge {
+  background: var(--cgv-red);
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  letter-spacing: 0.08em;
+}
+
+.eticket-title-box h1 {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+
+.eticket-title-box p {
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.eticket-status-badge {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #10b981;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Movie Hero Banner in Ticket */
+.eticket-movie-section {
+  padding: 24px 30px 18px;
+  border-bottom: 1px dashed #e2e8f0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.eticket-movie-info h2 {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+.eticket-movie-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.eticket-tag {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.eticket-tag.highlight {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Barcode Section (Mã vạch quét tại quầy/kiosk) */
+.eticket-barcode-box {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 22px 24px 18px;
+  margin: 20px 30px;
+  text-align: center;
+}
+
+.barcode-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #475569;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.barcode-svg-container {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.barcode-note {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.barcode-note strong {
+  color: #0f172a;
+}
+
+/* Ticket Details Grid */
+.eticket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  padding: 10px 30px 24px;
+}
+
+.eticket-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.eticket-field span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.eticket-field strong {
+  font-size: 16px;
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+.eticket-field strong.seats-val {
+  color: var(--cgv-red);
+  font-size: 18px;
+}
+
+.eticket-field strong.price-val {
+  color: #059669;
+  font-size: 18px;
+}
+
+/* Email & Action Container */
+.ticket-actions-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ticket-email-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.ticket-email-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.ticket-email-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ticket-email-input {
+  flex: 1;
+  min-width: 240px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 14px;
+}
+
+.ticket-email-input:focus {
+  outline: none;
+  border-color: var(--cgv-red);
+}
+
+.btn-send-email {
+  background: var(--cgv-red);
+  color: #fff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-send-email:hover {
+  background: var(--cgv-dark-red);
+}
+
+.email-feedback {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.email-feedback.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+.email-feedback.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+/* Action Buttons */
+.ticket-button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-print {
+  background: #fff;
+  color: #111;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-print:hover {
+  background: #f1f5f9;
+}
+
+.btn-preview-mail {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-preview-mail:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Email Preview Modal */
+.email-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.email-modal-box {
+  background: #fff;
+  color: #111;
+  width: min(640px, 95vw);
+  max-height: 90vh;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.email-modal-header {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.email-modal-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.email-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.email-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Print Stylesheet */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .ticket-nav-bar,
+  .ticket-actions-card,
+  .email-modal-overlay {
+    display: none !important;
+  }
+
+  .ticket-page-wrap {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .eticket-card {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    border-radius: 0 !important;
+  }
+
+  .eticket-header {
+    background: #000 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .eticket-barcode-box {
+    border: 1px solid #000 !important;
+    background: #fff !important;
+  }
+}

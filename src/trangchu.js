@@ -1,31 +1,74 @@
+// Trang chính và luồng đặt vé: chọn suất, chọn/giữ ghế, xác nhận và hiện vé.
 import './styles/home.css'
 import { icons } from './ui/icons.js'
-import { showing, comingSoon, news, theaters, regionLabels, allMovies, seedMoviesById, currentMovieCount, vnMovieCount, intlMovieCount, vietnameseMovies, showtimes, datePlans, upcomingShowtimes, officialPosterFallback } from './data/home-catalog.js'
+import {
+  showing,
+  comingSoon,
+  news,
+  theaters,
+  regionLabels,
+  allMovies,
+  seedMoviesById,
+  currentMovieCount,
+  vnMovieCount,
+  intlMovieCount,
+  vietnameseMovies,
+  showtimes,
+  datePlans,
+  upcomingShowtimes,
+  officialPosterFallback,
+} from './data/home-catalog.js'
 import { mountUserNav } from './shared/user-nav.js'
 import { getCachedUser, isAuthenticated, loginUrl } from './shared/auth.js'
 import { apiUrl } from './shared/api.js'
-import { setAdminSession, isAdminAuthenticated } from './shared/admin-auth.js'
-import { getMovieDetail, renderUpcomingShowtimes, movieCard, renderShowtimes, theaterOptions, totalTodayShows } from './ui/home-components.js'
+import {
+  getMovieDetail,
+  renderUpcomingShowtimes,
+  movieCard,
+  renderShowtimes,
+  theaterOptions,
+  totalTodayShows,
+} from './ui/thanh-phan-trang-chu.js'
+import {
+  createSeatHold,
+  releaseSeatHold,
+  getHeldSeats,
+  DEFAULT_HOLD_DURATION_SECONDS,
+  createUserBooking,
+} from './shared/booking-storage.js'
+import { generateBarcodeSvg } from './shared/barcode.js'
 
 const now = new Date()
-const today = now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const today = now.toLocaleDateString('vi-VN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
 
+// Hàm tiện ích đọc/ghi JSON trong localStorage, có giá trị dự phòng khi lỗi.
 const storageGet = (key, fallback = []) => {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback }
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback))
+  } catch {
+    return fallback
+  }
 }
 const storageSet = (key, value) => {
-  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {}
 }
+// Tạo khóa riêng cho sơ đồ ghế của từng phim, rạp, ngày và giờ chiếu.
 const bookingKey = (movie, theaterId, date, time) => `${movie}__${theaterId}__${date}__${time}`
 const ticketPrice = 85000
-const getServerBookings = async () => { try { const r = await fetch(apiUrl('/bookings')); return r.ok ? await r.json() : [] } catch { return [] } }
-const occupiedFor = (list, movie, theaterId, date, time) => list.filter(b => b.movie === movie && String(b.theaterId) === String(theaterId) && b.date === date && b.time === time && !['Đã hủy','Đã hoàn tiền'].includes(b.paymentStatus)).flatMap(b => b.seats || [])
 
 document.querySelector('#app').innerHTML = `
 <header class="header">
   <div class="container header-inner">
     <button type="button" class="burger" id="burger" aria-label="Mở menu">${icons.menu}</button>
-    <a href="#" class="logo">CGV<span>Cinemas</span></a>
+    <a href="#" class="logo">CGV<span>Cinemas</span>
+  </a>
     <nav class="nav" id="nav">
       <a href="/phim.html">PHIM</a>
       <a href="/lichchieu.html">LỊCH CHIẾU</a>
@@ -36,40 +79,67 @@ document.querySelector('#app').innerHTML = `
     </nav>
     <div class="header-actions">
       <button type="button" class="icon-btn" id="searchOpen" aria-label="Tìm kiếm">${icons.search}</button>
-      <a class="login-btn ticket-history-btn" href="/ve-cua-toi.html">${icons.ticket}<span>VÉ CỦA TÔI</span></a>
-      <button type="button" class="login-btn" id="adminLoginOpen">${icons.user}<span>ADMIN</span></button>
+      <a class="login-btn ticket-history-btn" href="/ve-cua-toi.html">${icons.ticket}<span>VÉ CỦA TÔI</span>
+  </a>
+      <a class="login-btn" href="/dang-nhap-quan-tri.html">${icons.user}<span>ADMIN</span>
+  </a>
     </div>
   </div>
 </header>
 
 <section class="hero hero-2026 hero-catalog">
-  <div class="hero-bg hero-bg-catalog"><div class="hero-mesh"></div><div class="hero-grain"></div></div>
+  <div class="hero-bg hero-bg-catalog">
+  <div class="hero-mesh">
+  </div>
+  <div class="hero-grain">
+  </div>
+  </div>
   <div class="container hero-catalog-inner">
     <div class="hero-copy hero-copy-catalog">
       <div class="hero-kicker-row">
-        <span class="hero-badge">CGV · PHIM NỔI BẬT 2026</span>
+        <span class="hero-badge">CGV CINEMAS · PHIM ĐANG CHIẾU</span>
       </div>
       <p class="hero-date">${today}</p>
-      <h1>HẸN NHAU<br><span>Ở RẠP.</span></h1>
-      <p class="hero-sub">Khám phá những bộ phim nổi bật của 2026 — từ <strong>phim Việt giàu cảm xúc</strong> đến kinh dị, hành động và bom tấn quốc tế. Xem thông tin phim, lịch chiếu và chọn suất phù hợp cho buổi hẹn tiếp theo.</p>
+      <h1>PHIM ĐANG<br>
+  <span>CHIẾU TẠI CGV.</span>
+  </h1>
+      <p class="hero-sub">Khám phá phim đang chiếu, xem lịch tại các cụm rạp CGV và chọn suất phù hợp. Từ những câu chuyện Việt giàu cảm xúc đến các bom tấn quốc tế, bộ phim tiếp theo của bạn bắt đầu tại đây.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>XEM PHIM ĐANG HOT</span></a>
-        <a class="btn btn-ghost" href="#vietnam">PHIM VIỆT 2026</a>
+        <a class="btn btn-primary" href="#showing">${icons.ticket}<span>KHÁM PHÁ PHIM</span>
+  </a>
+        <a class="btn btn-ghost" href="#showtimes">TÌM SUẤT CHIẾU</a>
       </div>
       <div class="hero-stats hero-stats-2026">
-        <div><strong id="homeMovieCount">${allMovies.length}</strong><span>Tựa phim nổi bật</span></div>
-        <div><strong id="homeVnCount">${vnMovieCount}</strong><span>Phim Việt 2026</span></div>
-        <div><strong>${theaters.length}</strong><span>Cụm rạp theo khu vực</span></div>
+        <div>
+  <strong id="homeMovieCount">${allMovies.length}</strong>
+  <span>Tựa phim nổi bật</span>
+  </div>
+        <div>
+  <strong id="homeVnCount">${vnMovieCount}</strong>
+  <span>Phim Việt 2026</span>
+  </div>
+        <div>
+  <strong>${theaters.length}</strong>
+  <span>Cụm rạp theo khu vực</span>
+  </div>
       </div>
     </div>
     <div class="hero-poster-wall" id="heroPosterWall" aria-label="Poster phim nổi bật 2026">
-      ${[showing[0], showing[1], showing[5], showing[7]].map((m, i) => `
+      ${[showing[0], showing[1], showing[5], showing[7]]
+        .map(
+          (m, i) => `
         <article class="hero-mini-poster p${i + 1}" data-detail="${m.title}">
           <img loading="eager" decoding="async" referrerpolicy="no-referrer" src="${m.image}" alt="Poster ${m.title}" onerror="this.onerror=null;this.src='${m.fallback || ''}'" />
-          <div class="hero-mini-shade"></div>
-          <div class="hero-mini-copy"><span>${m.origin === 'vn' ? 'PHIM VIỆT' : m.country}</span><strong>${m.title}</strong></div>
+          <div class="hero-mini-shade">
+            </div>
+          <div class="hero-mini-copy">
+            <span>${m.origin === 'vn' ? 'PHIM VIỆT' : m.country}</span>
+            <strong>${m.title}</strong>
+            </div>
         </article>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
   </div>
 </section>
@@ -77,7 +147,11 @@ document.querySelector('#app').innerHTML = `
 <section id="showing" class="section">
   <div class="container">
     <div class="section-head section-head-rich">
-      <div><span class="eyebrow">HOT PICKS · 2026</span><h2>PHIM HOT 2026</h2><p class="section-intro">Phim Việt và quốc tế đang được quan tâm, tất cả đều có poster và thông tin chi tiết.</p></div>
+      <div>
+  <span class="eyebrow">HOT PICKS · 2026</span>
+  <h2>PHIM HOT 2026</h2>
+  <p class="section-intro">Phim Việt và quốc tế đang được quan tâm, tất cả đều có poster và thông tin chi tiết.</p>
+  </div>
       <div class="movie-filter" id="movieFilter">
         <button type="button" class="filter-chip active" data-filter="all">Tất cả</button>
         <button type="button" class="filter-chip" data-filter="vn">Phim Việt</button>
@@ -94,11 +168,24 @@ document.querySelector('#app').innerHTML = `
 <section id="vietnam" class="section section-vietnam">
   <div class="container">
     <div class="section-head">
-      <div><span class="eyebrow">VIETNAMESE CINEMA · 2026</span><h2>PHIM VIỆT NỔI BẬT</h2><p class="section-intro">Từ hành động, gia đình đến kinh dị — các phim Việt 2026 được gom riêng để dễ theo dõi.</p></div>
+      <div>
+  <span class="eyebrow">VIETNAMESE CINEMA · 2026</span>
+  <h2>PHIM VIỆT NỔI BẬT</h2>
+  <p class="section-intro">Từ hành động, gia đình đến kinh dị — các phim Việt 2026 được gom riêng để dễ theo dõi.</p>
+  </div>
       <span class="see-all" id="homeVnLabel">${vnMovieCount} phim Việt nổi bật</span>
     </div>
     <div class="grid vietnam-grid" id="vietnamMovieGrid">
-      ${vietnameseMovies.slice(0, 8).map((m) => movieCard(m, { btn: showing.includes(m), detailOnly: !showing.includes(m), player: !showing.includes(m) })).join('')}
+      ${vietnameseMovies
+        .slice(0, 8)
+        .map((m) =>
+          movieCard(m, {
+            btn: showing.includes(m),
+            detailOnly: !showing.includes(m),
+            player: !showing.includes(m),
+          }),
+        )
+        .join('')}
     </div>
   </div>
 </section>
@@ -106,7 +193,11 @@ document.querySelector('#app').innerHTML = `
 <section id="coming" class="section section-alt">
   <div class="container">
     <div class="section-head">
-      <div><span class="eyebrow">COMING SOON · 2026</span><h2>PHIM SẮP CHIẾU</h2><p class="section-intro">Các phim có ngày phát hành đã được công bố; nội dung chưa công bố sẽ được ghi rõ là đang cập nhật.</p></div>
+      <div>
+  <span class="eyebrow">COMING SOON · 2026</span>
+  <h2>PHIM SẮP CHIẾU</h2>
+  <p class="section-intro">Các phim có ngày phát hành đã được công bố; nội dung chưa công bố sẽ được ghi rõ là đang cập nhật.</p>
+  </div>
       <a href="#" class="see-all">Xem tất cả</a>
     </div>
     <div class="grid grid-4 coming-grid" id="comingMovieGrid">
@@ -127,7 +218,10 @@ document.querySelector('#app').innerHTML = `
         <button type="button" class="tab region-tab" data-region="central">Miền Trung</button>
         <button type="button" class="tab region-tab" data-region="south">Miền Nam</button>
       </div>
-      <label class="theater-select-wrap"><span>Chọn rạp</span><select id="theaterSelect">${theaterOptions('north')}</select></label>
+      <label class="theater-select-wrap">
+  <span>Chọn rạp</span>
+  <select id="theaterSelect">${theaterOptions('north')}</select>
+  </label>
     </div>
     <div class="tab-sub" id="theaterAddr">${theaters[0].name} · ${theaters[0].addr} · ${theaters[0].screens} phòng chiếu</div>
     <div class="showtimes" id="showtimesBox">${renderShowtimes(theaters[0].id)}</div>
@@ -142,11 +236,17 @@ document.querySelector('#app').innerHTML = `
     </div>
     <div class="upcoming-controls">
       <div class="tabs" id="upcomingDateTabs">
-        ${Object.entries(upcomingShowtimes).map(([dateKey, date], index) =>
-          `<button type="button" class="tab upcoming-date-tab ${index === 0 ? 'active' : ''}" data-date="${dateKey}">${date.label}</button>`
-        ).join('')}
+        ${Object.entries(upcomingShowtimes)
+          .map(
+            ([dateKey, date], index) =>
+              `<button type="button" class="tab upcoming-date-tab ${index === 0 ? 'active' : ''}" data-date="${dateKey}">${date.label}</button>`,
+          )
+          .join('')}
       </div>
-      <label class="theater-select-wrap wide"><span>Rạp áp dụng</span><select id="upcomingTheaterSelect">${theaterOptions('all')}</select></label>
+      <label class="theater-select-wrap wide">
+  <span>Rạp áp dụng</span>
+  <select id="upcomingTheaterSelect">${theaterOptions('all')}</select>
+  </label>
     </div>
     <div class="tab-sub" id="upcomingSub">${upcomingShowtimes[datePlans[0][0]].label} · ${theaters[0].name} · ${theaters[0].addr}</div>
     <div class="showtimes" id="upcomingBox">${renderUpcomingShowtimes(datePlans[0][0], theaters[0].id)}</div>
@@ -214,7 +314,9 @@ document.querySelector('#app').innerHTML = `
       <a href="#" class="see-all">Xem tất cả</a>
     </div>
     <div class="news-grid">
-      ${news.map((n) => `
+      ${news
+        .map(
+          (n) => `
         <article class="news-card">
           <div class="news-thumb" style="background:${n.color}">
             <span class="news-letter">${n.title.charAt(0)}</span>
@@ -226,7 +328,9 @@ document.querySelector('#app').innerHTML = `
             <a href="#" class="news-more">Đọc tiếp</a>
           </div>
         </article>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
   </div>
 </section>
@@ -249,12 +353,24 @@ document.querySelector('#app').innerHTML = `
     </div>
     <div class="app-badges">
       <a href="#" class="store-badge">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22z"/><path d="M12 1a8 8 0 0 1 6 12l-6 3-6-3a8 8 0 0 1 6-12z"/></svg>
-        <span><small>CÓ SẴN TRÊN</small><b>App Store</b></span>
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22z"/>
+  <path d="M12 1a8 8 0 0 1 6 12l-6 3-6-3a8 8 0 0 1 6-12z"/>
+  </svg>
+        <span>
+  <small>CÓ SẴN TRÊN</small>
+  <b>App Store</b>
+  </span>
       </a>
       <a href="#" class="store-badge">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 3 9 9-9 9V3z"/><path d="M13 12h8"/></svg>
-        <span><small>GOOGLE PLAY</small><b>Google Play</b></span>
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m4 3 9 9-9 9V3z"/>
+  <path d="M13 12h8"/>
+  </svg>
+        <span>
+  <small>GOOGLE PLAY</small>
+  <b>Google Play</b>
+  </span>
       </a>
     </div>
   </div>
@@ -264,20 +380,31 @@ document.querySelector('#app').innerHTML = `
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a href="#" class="logo">CGV<span>Cinemas</span></a>
+        <a href="#" class="logo">CGV<span>Cinemas</span>
+  </a>
         <p>Hệ thống rạp chiếu phim hiện đại hàng đầu - đem điện ảnh đỉnh cao đến gần hơn với mọi khán giả.</p>
         <div class="socials">
           <a href="#" class="social" aria-label="Facebook">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12Z"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+  <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12Z"/>
+  </svg>
           </a>
           <a href="#" class="social" aria-label="Instagram">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="3" y="3" width="18" height="18" rx="5"/>
+  <circle cx="12" cy="12" r="4"/>
+  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+  </svg>
           </a>
           <a href="#" class="social" aria-label="YouTube">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4L15.8 12Z"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+  <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4L15.8 12Z"/>
+  </svg>
           </a>
           <a href="#" class="social" aria-label="TikTok">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.6 6.7a4.7 4.7 0 0 1-3.4-1.5 4.7 4.7 0 0 1-1.2-3.2h-3.4v13.8a2.8 2.8 0 1 1-2.8-2.8c.3 0 .6 0 .9.1V9.6a6.3 6.3 0 0 0-.9-.1A6.2 6.2 0 1 0 16 16.6V9.4a8 8 0 0 0 4.6 1.5V7.5c-.3 0-.7 0-1-.8Z"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+  <path d="M19.6 6.7a4.7 4.7 0 0 1-3.4-1.5 4.7 4.7 0 0 1-1.2-3.2h-3.4v13.8a2.8 2.8 0 1 1-2.8-2.8c.3 0 .6 0 .9.1V9.6a6.3 6.3 0 0 0-.9-.1A6.2 6.2 0 1 0 16 16.6V9.4a8 8 0 0 0 4.6 1.5V7.5c-.3 0-.7 0-1-.8Z"/>
+  </svg>
           </a>
         </div>
       </div>
@@ -327,32 +454,17 @@ document.querySelector('#app').innerHTML = `
 </div>
 
 <div class="modal" id="movieModal" hidden>
-  <div class="modal-backdrop" data-close></div>
+  <div class="modal-backdrop" data-close>
+  </div>
   <div class="modal-box movie-modal-box">
     <button type="button" class="modal-close" data-close aria-label="Đóng">${icons.close}</button>
-    <div id="modalContent"></div>
+    <div id="modalContent">
+  </div>
   </div>
 </div>
 
-<div class="modal" id="adminLoginModal" hidden>
-  <div class="modal-backdrop" data-admin-close></div>
-  <div class="modal-box admin-login-box">
-    <button type="button" class="modal-close" data-admin-close aria-label="Đóng">${icons.close}</button>
-    <div class="admin-login-head">
-      <span class="admin-login-icon">${icons.lock}</span>
-      <div><span class="admin-kicker">KHU VỰC QUẢN TRỊ</span><h3>Đăng nhập Admin</h3></div>
-    </div>
-    <form class="admin-login-form" id="adminLoginForm">
-      <label>Tài khoản<input id="adminUsername" type="text" autocomplete="username" placeholder="Nhập tài khoản" required /></label>
-      <label>Mật khẩu<input id="adminPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required /></label>
-      <p class="admin-error" id="adminLoginError" aria-live="polite"></p>
-      <button type="submit" class="btn btn-primary admin-submit">${icons.lock}<span>ĐĂNG NHẬP</span></button>
-      <p class="admin-demo-note">Đăng nhập để quản lý nội dung và vận hành hệ thống.</p>
-    </form>
-  </div>
-</div>
-
-<button type="button" class="to-top" id="toTop" aria-label="Lên đầu trang"></button>
+<button type="button" class="to-top" id="toTop" aria-label="Lên đầu trang">
+  </button>
 `
 
 const state = { modalMode: 'buy' }
@@ -360,37 +472,163 @@ mountUserNav()
 
 const PAYMENT_BANK = 'BIDV'
 const PAYMENT_ACCOUNT = '8855252740'
-const paymentQrUrl = (amount, content) => `https://img.vietqr.io/image/${PAYMENT_BANK}-${PAYMENT_ACCOUNT}-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(content)}`
-const getScheduleRows = (theaterId, date) => upcomingShowtimes[date]?.theaters?.[theaterId] || showtimes[theaterId] || []
-const getMovieTimes = (movieTitle, theaterId, date) => getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
+const paymentQrUrl = (amount, content) =>
+  `https://img.vietqr.io/image/${PAYMENT_BANK}-${PAYMENT_ACCOUNT}-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(content)}`
+const getScheduleRows = (theaterId, date) =>
+  upcomingShowtimes[date]?.theaters?.[theaterId] || showtimes[theaterId] || []
+const getMovieTimes = (movieTitle, theaterId, date) =>
+  getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
+// Dựng thẻ vé sau khi đặt thành công, gồm mã vé và mã vạch SVG.
 const renderTicket = (booking) => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
+  const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
+  const currentUser = getCachedUser()
+  const initialEmail = booking.userEmail || currentUser?.email || ''
+
   document.querySelector('#modalContent').innerHTML = `
     <div class="ticket-success">
       <span class="ticket-success-icon">✓</span>
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
       <h3>${booking.movie}</h3>
       <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
-      <div class="ticket-grid">
-        <div><span>Rạp</span><strong>${theater?.name || booking.theaterId}</strong></div>
-        <div><span>Ngày</span><strong>${booking.date}</strong></div>
-        <div><span>Suất chiếu</span><strong>${booking.time}</strong></div>
-        <div><span>Ghế</span><strong>${booking.seats.join(', ')}</strong></div>
-        <div><span>Số vé</span><strong>${booking.seats.length}</strong></div>
-        <div><span>Tổng tiền</span><strong>${(booking.seats.length * ticketPrice).toLocaleString('vi-VN')}đ</strong></div>
-        <div><span>Thanh toán</span><strong>${booking.paymentMethod || 'QR BIDV'}</strong></div>
+
+      <!-- Mã vạch quét tại quầy/kiosk -->
+      <div style="background:#fff;border-radius:12px;padding:14px;margin:16px auto;max-width:380px;border:2px dashed #cbd5e1;text-align:center;">
+        <span style="display:block;font-size:11px;font-weight:800;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">MÃ VẠCH QUÉT TẠI QUẦY / KIOSK LẤY VÉ</span>
+        <div style="margin:0 auto;display:flex;justify-content:center;">
+          ${barcodeSvg}
+        </div>
+        <span style="display:block;font-size:11.5px;color:#64748b;margin-top:6px;">Đưa mã vạch này vào máy quét tại rạp để in vé cứng.</span>
       </div>
-      <p class="detail-demo-note">Đã ghi nhận thanh toán qua ${PAYMENT_BANK} · STK ${PAYMENT_ACCOUNT}.</p>
-      <button type="button" class="btn btn-primary btn-sm" data-close-ticket>HOÀN TẤT</button>
+
+      <div class="ticket-grid">
+        <div>
+          <span>Rạp</span>
+          <strong>${theater?.name || booking.theaterId}</strong>
+        </div>
+        <div>
+          <span>Ngày</span>
+          <strong>${booking.date}</strong>
+        </div>
+        <div>
+          <span>Suất chiếu</span>
+          <strong>${booking.time}</strong>
+        </div>
+        <div>
+          <span>Ghế</span>
+          <strong>${booking.seats.join(', ')}</strong>
+        </div>
+        <div>
+          <span>Số vé</span>
+          <strong>${booking.seats.length}</strong>
+        </div>
+        <div>
+          <span>Tổng tiền</span>
+          <strong>${(booking.seats.length * ticketPrice).toLocaleString('vi-VN')}đ</strong>
+        </div>
+        <div>
+          <span>Thanh toán</span>
+          <strong>${booking.paymentMethod || 'QR BIDV'}</strong>
+        </div>
+      </div>
+
+      <!-- Khung gửi email vé -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 18px;margin:16px 0;text-align:left;">
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span>✉️ Nhận thông tin vé & mã vạch qua Email</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="email" id="modalTicketEmailInput" placeholder="Nhập địa chỉ email..." value="${initialEmail}" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid rgba(255,255,255,0.25);border-radius:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:13px;" />
+          <button type="button" class="btn btn-primary btn-sm" id="btnModalSendEmail" style="white-space:nowrap;padding:9px 16px;">GỬI EMAIL VÉ</button>
+        </div>
+        <div id="modalEmailMsg" style="font-size:12.5px;margin-top:8px;" hidden></div>
+      </div>
+
+      <!-- Các nút thao tác -->
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
+        <a href="/chi-tiet-ve.html?code=${encodeURIComponent(booking.code)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+          <span>🎟️ MỞ FILE VÉ &amp; MÃ VẠCH (E-TICKET)</span>
+        </a>
+        <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.25);" data-close-ticket>HOÀN TẤT</button>
+      </div>
     </div>`
+
+  const emailBtn = document.querySelector('#btnModalSendEmail')
+  const emailInput = document.querySelector('#modalTicketEmailInput')
+  const emailMsg = document.querySelector('#modalEmailMsg')
+
+  const sendEmailAction = async () => {
+    const email = emailInput?.value.trim()
+    if (!email) return
+    booking.userEmail = email
+    const all = storageGet('cgv_bookings_v1', [])
+    const idx = all.findIndex((b) => b.code === booking.code)
+    if (idx !== -1) {
+      all[idx].userEmail = email
+      storageSet('cgv_bookings_v1', all)
+    }
+
+    const emailBody = [
+      `Vé CGV: ${booking.code}`,
+      `Phim: ${booking.movie}`,
+      `Rạp: ${booking.theaterName || theater?.name || ''}`,
+      `Ngày / giờ: ${booking.date} ${booking.time}`,
+      `Ghế: ${(booking.seats || []).join(', ')}`,
+      `Tổng tiền: ${Number(booking.amount || 0).toLocaleString('vi-VN')}đ`,
+      `Mã vé: ${booking.code}`,
+    ].join('\n')
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Thông tin vé CGV ${booking.code}`)}&body=${encodeURIComponent(emailBody)}`
+    if (emailMsg) {
+      emailMsg.hidden = false
+      emailMsg.style.color = '#34d399'
+      emailMsg.textContent = `Đã mở bản nháp email tới ${email}. Hãy bấm Gửi trong ứng dụng email để gửi vé.`
+    }
+  }
+
+  emailBtn?.addEventListener('click', sendEmailAction)
 }
 
+let currentHoldTimer = null
+let currentHoldId = null
+const clearHoldTimer = () => {
+  if (currentHoldTimer) {
+    clearInterval(currentHoldTimer)
+    currentHoldTimer = null
+  }
+}
+
+// Thông báo khi thời gian giữ ghế hết và cho phép người dùng chọn lại.
+const renderHoldExpired = (m, theaterId, date, time, seats) => {
+  document.querySelector('#modalContent').innerHTML = `
+    <div class="seat-hold-expired-box">
+      <div class="seat-hold-expired-icon">⏰</div>
+      <span class="detail-kicker">HẾT THỜI GIAN GIỮ CHỖ</span>
+      <h3>Thời gian giữ chỗ đã kết thúc!</h3>
+      <p>
+        Các ghế <strong>${seats.join(', ')}</strong> đã được tự động giải phóng để nhường quyền chọn cho khách hàng khác. Vui lòng chọn lại suất chiếu hoặc ghế để tiếp tục đặt vé.
+      </p>
+      <div style="margin-top: 14px;">
+        <button type="button" class="btn btn-primary" id="btnReSelectSeat">CHỌN LẠI GHẾ</button>
+      </div>
+    </div>`
+  document.querySelector('#btnReSelectSeat')?.addEventListener('click', () => {
+    openSeatSelection(m, theaterId, date, time)
+  })
+}
+
+// Mở sơ đồ ghế, đánh dấu ghế trống/đang giữ/đã đặt và xử lý chọn ghế.
 const openSeatSelection = (m, theaterId, date, time) => {
+  clearHoldTimer()
+  if (currentHoldId) {
+    releaseSeatHold(currentHoldId)
+    currentHoldId = null
+  }
   const key = bookingKey(m.title, theaterId, date, time)
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
-  const occupied = [...new Set([...(occupiedMap[key] || []), ...occupiedFor(storageGet('cgv_bookings_v1', []), m.title, theaterId, date, time)])]
-  const rows = ['A','B','C','D','E','F','G','H']
+  const occupied = occupiedMap[key] || ['A2', 'B5', 'C7', 'D4', 'F8']
+  const heldSeats = getHeldSeats(key)
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
   const theater = theaters.find((t) => t.id === theaterId)
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-flow-head">
@@ -399,85 +637,247 @@ const openSeatSelection = (m, theaterId, date, time) => {
       <p>${theater?.name || ''} · ${date} · ${time}</p>
     </div>
     <div class="seat-flow-body">
+      <div id="seatConflictAlert" class="seat-conflict-alert" hidden></div>
       <div class="screen-label">MÀN HÌNH</div>
       <div class="seat-map">
-        ${rows.map((r) => `<div class="seat-row"><span>${r}</span>${Array.from({length:10},(_,i)=>{const seat=`${r}${i+1}`; return `<button type="button" class="seat ${occupied.includes(seat)?'occupied':''}" data-seat="${seat}" ${occupied.includes(seat)?'disabled':''}>${i+1}</button>`}).join('')}</div>`).join('')}
+        ${rows
+          .map(
+            (r) =>
+              `<div class="seat-row">
+                <span>${r}</span>${Array.from({ length: 10 }, (_, i) => {
+                const seat = `${r}${i + 1}`
+                const isOccupied = occupied.includes(seat)
+                const isHolding = !isOccupied && heldSeats.includes(seat)
+                const seatClass = isOccupied ? 'seat occupied' : isHolding ? 'seat holding' : 'seat'
+                const isDisabled = isOccupied || isHolding ? 'disabled' : ''
+                const seatTitle = isOccupied
+                  ? `Ghế ${seat} (Đã đặt)`
+                  : isHolding
+                    ? `Ghế ${seat} (Đang giữ chỗ)`
+                    : `Ghế ${seat} (Còn trống)`
+                return `<button type="button" class="${seatClass}" data-seat="${seat}" ${isDisabled} title="${seatTitle}">${i + 1}</button>`
+              }).join('')}</div>`,
+          )
+          .join('')}
       </div>
-      <div class="seat-legend"><span><i class="seat-demo"></i>Còn trống</span><span><i class="seat-demo selected"></i>Đang chọn</span><span><i class="seat-demo occupied"></i>Đã đặt</span></div>
-      <div class="seat-summary"><span>Ghế đã chọn: <strong id="selectedSeatText">Chưa chọn</strong></span><strong id="seatTotal">0đ</strong></div>
-      <button type="button" class="btn btn-primary" id="confirmSeatBtn" disabled>XÁC NHẬN ĐẶT VÉ</button>
+      <div class="seat-legend">
+        <span>
+          <i class="seat-demo"></i>Còn trống
+        </span>
+        <span>
+          <i class="seat-demo selected"></i>Đang chọn
+        </span>
+        <span>
+          <i class="seat-demo holding"></i>Đang giữ chỗ
+        </span>
+        <span>
+          <i class="seat-demo occupied"></i>Đã đặt
+        </span>
+      </div>
+      <div class="seat-summary">
+        <span>Ghế đã chọn: <strong id="selectedSeatText">Chưa chọn</strong></span>
+        <strong id="seatTotal">0đ</strong>
+      </div>
+      <button type="button" class="btn btn-primary" id="confirmSeatBtn" disabled>XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)</button>
     </div>`
   const selected = new Set()
-  document.querySelectorAll('#modalContent .seat:not(.occupied)').forEach((btn) => btn.addEventListener('click', () => {
-    const seat = btn.dataset.seat
-    selected.has(seat) ? selected.delete(seat) : selected.add(seat)
-    btn.classList.toggle('selected')
-    document.querySelector('#selectedSeatText').textContent = selected.size ? [...selected].join(', ') : 'Chưa chọn'
-    document.querySelector('#seatTotal').textContent = (selected.size * ticketPrice).toLocaleString('vi-VN') + 'đ'
-    document.querySelector('#confirmSeatBtn').disabled = selected.size === 0
-  }))
+  document.querySelectorAll('#modalContent .seat:not(.occupied):not(.holding)').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const seat = btn.dataset.seat
+      selected.has(seat) ? selected.delete(seat) : selected.add(seat)
+      btn.classList.toggle('selected')
+      document.querySelector('#selectedSeatText').textContent = selected.size
+        ? [...selected].join(', ')
+        : 'Chưa chọn'
+      document.querySelector('#seatTotal').textContent =
+        (selected.size * ticketPrice).toLocaleString('vi-VN') + 'đ'
+      document.querySelector('#confirmSeatBtn').disabled = selected.size === 0
+    }),
+  )
   document.querySelector('#confirmSeatBtn').addEventListener('click', async () => {
-    const latest = await getServerBookings()
-    const unavailable = occupiedFor(latest, m.title, theaterId, date, time)
-    if ([...selected].some(seat => unavailable.includes(seat))) {
-      alert('Có ghế vừa được người khác đặt. Sơ đồ ghế sẽ được tải lại; vui lòng chọn ghế khác.')
-      storageSet('cgv_bookings_v1', latest)
-      openSeatSelection(m, theaterId, date, time)
+    const seats = [...selected]
+    const button = document.querySelector('#confirmSeatBtn')
+    button.disabled = true
+    button.textContent = 'ĐANG KIỂM TRA GHẾ…'
+    const holdRes = await createSeatHold(key, seats, DEFAULT_HOLD_DURATION_SECONDS)
+    if (!holdRes.success) {
+      const alertBox = document.querySelector('#seatConflictAlert')
+      if (alertBox) {
+        alertBox.textContent = `⚠️ ${holdRes.message || 'Một số ghế bạn chọn vừa có khách khác giữ chỗ! Vui lòng chọn ghế khác.'}`
+        alertBox.hidden = false
+      }
+      if (/khách khác giữ chỗ/i.test(holdRes.message || '')) {
+        setTimeout(() => openSeatSelection(m, theaterId, date, time), 1200)
+      } else {
+        button.disabled = false
+        button.textContent = 'XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)'
+      }
       return
     }
-    const seats = [...selected]
-    openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key)
+    currentHoldId = holdRes.hold.id
+    openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key, holdRes.hold)
   })
 }
 
-const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key) => {
+// Hiển thị bước thanh toán mô phỏng, bộ đếm thời gian và nút xác nhận vé.
+const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key, hold) => {
+  clearHoldTimer()
   const theater = theaters.find((t) => t.id === theaterId)
   const amount = seats.length * ticketPrice
   const code = `CGV${Date.now().toString().slice(-8)}`
   const transferContent = `${code} ${m.title}`.replace(/[^a-zA-Z0-9À-ỹ ]/g, '').slice(0, 45)
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-flow-head payment-head">
-      <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN</span>
+      <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN &amp; GIỮ CHỖ</span>
       <h3>Quét QR để thanh toán</h3>
       <p>${m.title} · ${theater?.name || ''} · ${date} · ${time}</p>
+    </div>
+    <div class="seat-hold-banner" id="seatHoldBanner">
+      <div class="seat-hold-top">
+        <div class="seat-hold-title-box">
+          <span class="seat-hold-badge">⏳ ĐANG GIỮ CHỖ</span>
+          <span class="seat-hold-heading">Ghế của bạn đã được tạm giữ</span>
+        </div>
+        <div class="seat-hold-timer-box">
+          <span class="seat-hold-timer-label">Thời gian giữ chỗ:</span>
+          <span class="seat-hold-timer-val" id="holdCountdown">05:00</span>
+        </div>
+      </div>
+      <div class="seat-hold-progress-track">
+        <div class="seat-hold-progress-fill" id="holdProgressFill" style="width: 100%;"></div>
+      </div>
+      <p class="seat-hold-desc">
+        Hệ thống đang tạm khóa ghế <strong>${seats.join(', ')}</strong> cho bạn trong <strong>5 phút</strong>. Vui lòng chuyển khoản quét QR trước khi hết giờ để xác nhận vé.
+      </p>
     </div>
     <div class="payment-body">
       <div class="payment-qr-card">
         <img class="payment-qr" src="${paymentQrUrl(amount, transferContent)}" alt="QR thanh toán BIDV ${PAYMENT_ACCOUNT}" />
-        <div class="payment-bank"><strong>${PAYMENT_BANK}</strong><span>STK ${PAYMENT_ACCOUNT}</span></div>
+        <div class="payment-bank">
+          <strong>${PAYMENT_BANK}</strong>
+          <span>STK ${PAYMENT_ACCOUNT}</span>
+        </div>
       </div>
       <div class="payment-summary">
-        <div><span>Ghế</span><strong>${seats.join(', ')}</strong></div>
-        <div><span>Số tiền</span><strong class="payment-amount">${amount.toLocaleString('vi-VN')}đ</strong></div>
-        <div><span>Nội dung CK</span><strong>${transferContent}</strong></div>
+        <div>
+          <span>Ghế đã giữ</span>
+          <strong>${seats.join(', ')}</strong>
+        </div>
+        <div>
+          <span>Số tiền</span>
+          <strong class="payment-amount">${amount.toLocaleString('vi-VN')}đ</strong>
+        </div>
+        <div>
+          <span>Nội dung CK</span>
+          <strong>${transferContent}</strong>
+        </div>
         <p>Vui lòng quét QR bằng ứng dụng ngân hàng. Sau khi chuyển khoản thành công, bấm nút xác nhận bên dưới để hoàn tất đặt vé.</p>
-        <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
+        <div class="payment-actions-row">
+          <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
+          <button type="button" class="btn-hold-back" id="btnCancelHold">← HỦY GIỮ CHỖ / CHỌN LẠI</button>
+        </div>
       </div>
     </div>`
-  document.querySelector('#paymentConfirmBtn').addEventListener('click', async () => {
+
+  const banner = document.querySelector('#seatHoldBanner')
+  const countdownEl = document.querySelector('#holdCountdown')
+  const progressEl = document.querySelector('#holdProgressFill')
+  const totalSec = hold?.durationSeconds || DEFAULT_HOLD_DURATION_SECONDS
+  const expiresAt = hold?.expiresAt || Date.now() + totalSec * 1000
+
+  const updateTimer = () => {
+    const now = Date.now()
+    const remaining = Math.max(0, Math.round((expiresAt - now) / 1000))
+    const min = String(Math.floor(remaining / 60)).padStart(2, '0')
+    const sec = String(remaining % 60).padStart(2, '0')
+    if (countdownEl) countdownEl.textContent = `${min}:${sec}`
+    if (progressEl) progressEl.style.width = `${Math.min(100, (remaining / totalSec) * 100)}%`
+
+    if (remaining <= 60 && banner) {
+      banner.classList.add('urgent')
+    }
+
+    if (remaining <= 0) {
+      clearHoldTimer()
+      if (hold?.id) releaseSeatHold(hold.id)
+      currentHoldId = null
+      renderHoldExpired(m, theaterId, date, time, seats)
+    }
+  }
+
+  updateTimer()
+  currentHoldTimer = setInterval(updateTimer, 1000)
+
+  document.querySelector('#btnCancelHold')?.addEventListener('click', () => {
+    clearHoldTimer()
+    if (hold?.id) releaseSeatHold(hold.id)
+    currentHoldId = null
+    openSeatSelection(m, theaterId, date, time)
+  })
+
+  document.querySelector('#paymentConfirmBtn').addEventListener('click', async (event) => {
+    const confirmButton = event.currentTarget
+    confirmButton.disabled = true
+    clearHoldTimer()
+    if (hold?.id) releaseSeatHold(hold.id)
+    currentHoldId = null
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
-    const booking = { code, userId: currentUser?.id || null, userEmail: currentUser?.email || '', movie: m.title, theaterId, theaterName: theater?.name || theaterId, date, time, seats, amount, paymentMethod: `QR ${PAYMENT_BANK}`, paymentAccount: PAYMENT_ACCOUNT, paymentStatus: 'Đã thanh toán', createdAt: new Date().toISOString() }
-    const response = await fetch(apiUrl('/bookings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(booking) }).catch(() => null)
-    if (!response) { alert('Không kết nối được máy chủ đặt vé. Vui lòng thử lại.'); return }
-    if (response.status === 409) { alert('Ghế vừa được người khác đặt. Vui lòng chọn lại ghế.'); storageSet('cgv_bookings_v1', await getServerBookings()); openSeatSelection(m, theaterId, date, time); return }
-    if (!response.ok) { alert('Chưa thể xác nhận đặt vé. Vui lòng thử lại.'); return }
+    // Tạo dữ liệu vé sau khi xác nhận, lưu vé và đánh dấu ghế là đã đặt.
+    const booking = {
+      code,
+      userId: currentUser?.id || null,
+      userName: currentUser?.name || '',
+      userEmail: currentUser?.email || '',
+      movie: m.title,
+      theaterId,
+      theaterName: theater?.name || theaterId,
+      date,
+      time,
+      seats,
+      amount,
+      paymentMethod: `QR ${PAYMENT_BANK}`,
+      paymentAccount: PAYMENT_ACCOUNT,
+      paymentStatus: 'Đã thanh toán',
+      createdAt: new Date().toISOString(),
+    }
     bookings.unshift(booking)
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
     storageSet('cgv_seat_state_v1', occupiedMap)
-    renderTicket(booking)
+    const savedBooking = await createUserBooking(booking)
+    renderTicket(savedBooking)
   })
 }
 
 const openMyTickets = () => {
   const bookings = storageGet('cgv_bookings_v1', [])
   document.querySelector('#modalContent').innerHTML = `
-    <div class="ticket-list-head"><span class="detail-kicker">THÔNG TIN VÉ</span><h3>Vé đã đặt</h3><p>Danh sách vé gần đây của bạn.</p></div>
-    <div class="ticket-list">${bookings.length ? bookings.map((b) => {
-      const t = theaters.find((x) => x.id === b.theaterId)
-      return `<article class="saved-ticket"><div><strong>${b.movie}</strong><span>${t?.name || ''}</span></div><div><span>${b.date} · ${b.time}</span><strong>Ghế ${b.seats.join(', ')}</strong></div><button type="button" class="btn-details" data-view-ticket="${b.code}">XEM VÉ</button></article>`
-    }).join('') : '<p class="empty-showtimes">Bạn chưa có vé nào được lưu.</p>'}</div>`
+    <div class="ticket-list-head">
+    <span class="detail-kicker">THÔNG TIN VÉ</span>
+    <h3>Vé đã đặt</h3>
+    <p>Danh sách vé gần đây của bạn.</p>
+    </div>
+    <div class="ticket-list">${
+      bookings.length
+        ? bookings
+            .map((b) => {
+              const t = theaters.find((x) => x.id === b.theaterId)
+              return `<article class="saved-ticket">
+                <div>
+                <strong>${b.movie}</strong>
+                <span>${t?.name || ''}</span>
+                </div>
+                <div>
+                <span>${b.date} · ${b.time}</span>
+                <strong>Ghế ${b.seats.join(', ')}</strong>
+                </div>
+                <button type="button" class="btn-details" data-view-ticket="${b.code}">XEM VÉ</button>
+                </article>`
+            })
+            .join('')
+        : '<p class="empty-showtimes">Bạn chưa có vé nào được lưu.</p>'
+    }</div>`
   document.querySelector('#movieModal').hidden = false
   document.body.style.overflow = 'hidden'
 }
@@ -486,7 +886,9 @@ const openModal = (title, mode = 'buy') => {
   const m = [...showing, ...comingSoon].find((x) => x.title === title)
   if (!m) return
   state.modalMode = mode
-  const defaultTheater = theaters.find((t) => getMovieTimes(m.title, t.id, datePlans[0][0]).length) || theaters[0]
+  const defaultTheater =
+    theaters.find((t) => getMovieTimes(m.title, t.id, datePlans[0][0]).length) || theaters[0]
+  // Hiển thị giờ chiếu tương ứng với rạp và ngày người dùng chọn.
   const renderBookingTimes = (theaterId, date) => {
     const times = getMovieTimes(m.title, theaterId, date)
     const timesBox = document.querySelector('#bookingTimes')
@@ -495,28 +897,47 @@ const openModal = (title, mode = 'buy') => {
     selectedTime = ''
     if (continueBtn) continueBtn.disabled = true
     if (!timesBox || !note) return
-    timesBox.innerHTML = times.length ? times.map((t) => `<button type="button" class="time-chip" data-time="${t}">${t}</button>`).join('') : '<span class="mm-date">Rạp này chưa có suất chiếu cho phim trong ngày đã chọn.</span>'
-    note.textContent = times.length ? 'Vui lòng chọn một suất chiếu để tiếp tục chọn ghế.' : 'Hãy đổi rạp hoặc ngày để xem các suất chiếu khác.'
+    timesBox.innerHTML = times.length
+      ? times
+          .map((t) => `<button type="button" class="time-chip" data-time="${t}">${t}</button>`)
+          .join('')
+      : '<span class="mm-date">Rạp này chưa có suất chiếu cho phim trong ngày đã chọn.</span>'
+    note.textContent = times.length
+      ? 'Vui lòng chọn một suất chiếu để tiếp tục chọn ghế.'
+      : 'Hãy đổi rạp hoặc ngày để xem các suất chiếu khác.'
     note.classList.remove('ok')
-    timesBox.querySelectorAll('.time-chip').forEach((chip) => chip.addEventListener('click', () => {
-      timesBox.querySelectorAll('.time-chip').forEach((c) => c.classList.remove('active'))
-      chip.classList.add('active')
-      selectedTime = chip.dataset.time
-      note.innerHTML = `Đã chọn suất <strong>${selectedTime}</strong>. Tiếp tục để chọn ghế.`
-      note.classList.add('ok')
-      if (continueBtn) continueBtn.disabled = false
-    }))
+    timesBox.querySelectorAll('.time-chip').forEach((chip) =>
+      chip.addEventListener('click', () => {
+        timesBox.querySelectorAll('.time-chip').forEach((c) => c.classList.remove('active'))
+        chip.classList.add('active')
+        selectedTime = chip.dataset.time
+        note.innerHTML = `Đã chọn suất <strong>${selectedTime}</strong>. Tiếp tục để chọn ghế.`
+        note.classList.add('ok')
+        if (continueBtn) continueBtn.disabled = false
+      }),
+    )
   }
   document.querySelector('#modalContent').innerHTML = `
     <div class="mm-head" style="background:${m.color}">
       <span class="mm-letter">${m.image ? `<img class="mm-poster-img" referrerpolicy="no-referrer" src="${m.image}" alt="Poster ${m.title}" onerror="this.onerror=null;this.src='${m.fallback || ''}'" />` : m.title.charAt(0)}</span>
-      <div><span class="genre">${m.genre}</span><h3>${m.title}</h3><p>${m.meta}</p></div>
+      <div>
+    <span class="genre">${m.genre}</span>
+    <h3>${m.title}</h3>
+    <p>${m.meta}</p>
+    </div>
     </div>
     <div class="mm-body">
       <h4>${mode === 'buy' ? 'BƯỚC 1 / 3 · CHỌN RẠP, NGÀY VÀ SUẤT CHIẾU' : 'ĐẶT LỊCH NHẮC'}</h4>
-      ${mode === 'buy' ? `<div class="booking-selects"><label>Rạp<select id="bookingTheater">${theaterOptions('all').replace(`value="${defaultTheater.id}"`, `value="${defaultTheater.id}" selected`)}</select></label><label>Ngày<select id="bookingDate">${datePlans.map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select></label></div>` : ''}
-      <div class="st-times" id="bookingTimes"></div>
-      <p class="mm-note" id="mmNote"></p>
+      ${mode === 'buy' ? `<div class="booking-selects">
+        <label>Rạp<select id="bookingTheater">${theaterOptions('all').replace(`value="${defaultTheater.id}"`, `value="${defaultTheater.id}" selected`)}</select>
+        </label>
+        <label>Ngày<select id="bookingDate">${datePlans.map(([key, label]) => `<option value="${key}">${label}</option>`).join('')}</select>
+        </label>
+        </div>` : ''}
+      <div class="st-times" id="bookingTimes">
+    </div>
+      <p class="mm-note" id="mmNote">
+    </p>
       ${mode === 'buy' ? '<button type="button" class="btn btn-primary" id="continueBooking" disabled>TIẾP TỤC CHỌN GHẾ</button>' : ''}
     </div>`
   document.querySelector('#movieModal').hidden = false
@@ -535,7 +956,8 @@ const openModal = (title, mode = 'buy') => {
       openSeatSelection(m, theaterSelect.value, dateSelect.value, selectedTime)
     })
   } else {
-    document.querySelector('#bookingTimes').innerHTML = '<span class="mm-date">Tính năng nhắc lịch đang được cập nhật.</span>'
+    document.querySelector('#bookingTimes').innerHTML =
+      '<span class="mm-date">Tính năng nhắc lịch đang được cập nhật.</span>'
     document.querySelector('#mmNote').textContent = 'Phim hiện chưa mở đặt vé.'
   }
 }
@@ -544,7 +966,9 @@ const openMovieDetail = (title) => {
   const m = [...showing, ...comingSoon].find((x) => x.title === title)
   if (!m) return
   const d = getMovieDetail(m)
-  const screeningTheaters = theaters.filter((t) => (showtimes[t.id] || []).some((row) => row.title === m.title))
+  const screeningTheaters = theaters.filter((t) =>
+    (showtimes[t.id] || []).some((row) => row.title === m.title),
+  )
   const detailTheater = screeningTheaters[0] || theaters[0]
   const detailSchedule = (showtimes[detailTheater.id] || []).find((row) => row.title === m.title)
   document.querySelector('#modalContent').innerHTML = `
@@ -571,27 +995,67 @@ const openMovieDetail = (title) => {
         </div>
         <div class="detail-theater-box">
           <strong>${screeningTheaters.length ? `Đang chiếu tại ${screeningTheaters.length} rạp` : 'Thông tin lịch chiếu'}</strong>
-          ${screeningTheaters.length ? `<p>${detailTheater.name}</p><span>${detailTheater.addr} · ${regionLabels[detailTheater.region]}</span>` : '<p>Phim hiện chưa có lịch chiếu.</p><span>Hãy quay lại sau để xem các suất chiếu mới.</span>'}
+          ${screeningTheaters.length ? `<p>${detailTheater.name}</p>
+            <span>${detailTheater.addr} · ${regionLabels[detailTheater.region]}</span>` : '<p>Phim hiện chưa có lịch chiếu.</p><span>Hãy quay lại sau để xem các suất chiếu mới.</span>'}
           ${detailSchedule ? `<div class="detail-showtimes">${detailSchedule.times.map((t) => `<button type="button" class="time-chip" data-detail-time="${t}">${t}</button>`).join('')}</div>` : ''}
-          ${screeningTheaters.length > 1 ? `<div class="detail-cinema-list">${screeningTheaters.slice(0, 4).map((t) => `<span>${t.name}</span>`).join('')}</div>` : ''}
+          ${
+            screeningTheaters.length > 1
+              ? `<div class="detail-cinema-list">${screeningTheaters
+                  .slice(0, 4)
+                  .map((t) => `<span>${t.name}</span>`)
+                  .join('')}</div>`
+              : ''
+          }
         </div>
         <div class="movie-detail-actions">
-          ${detailSchedule ? `<button type="button" class="btn btn-primary btn-sm detail-buy" data-detail-buy="${m.title}">${icons.ticket}<span>CHỌN SUẤT CHIẾU</span></button>` : ''}
+          ${detailSchedule ? `<button type="button" class="btn btn-primary btn-sm detail-buy" data-detail-buy="${m.title}">${icons.ticket}<span>CHỌN SUẤT CHIẾU</span>
+            </button>` : ''}
         </div>
       </div>
       <dl class="movie-facts">
-        <div><dt>Khởi chiếu</dt><dd>${d.release}</dd></div>
-        <div><dt>Thời lượng</dt><dd>${d.duration}</dd></div>
-        <div><dt>Phân loại</dt><dd>${d.classification}</dd></div>
-        <div><dt>Thể loại</dt><dd>${d.genreFull}</dd></div>
-        <div><dt>Đạo diễn</dt><dd>${d.director}</dd></div>
-        <div><dt>Diễn viên</dt><dd>${d.cast}</dd></div>
-        <div><dt>Nhà sản xuất</dt><dd>${d.producer}</dd></div>
-        <div><dt>Quốc gia</dt><dd>${d.country}</dd></div>
-        <div><dt>Ngôn ngữ</dt><dd>${d.language}</dd></div>
-        <div><dt>Định dạng</dt><dd>${d.formats}</dd></div>
+        <div>
+    <dt>Khởi chiếu</dt>
+    <dd>${d.release}</dd>
+    </div>
+        <div>
+    <dt>Thời lượng</dt>
+    <dd>${d.duration}</dd>
+    </div>
+        <div>
+    <dt>Phân loại</dt>
+    <dd>${d.classification}</dd>
+    </div>
+        <div>
+    <dt>Thể loại</dt>
+    <dd>${d.genreFull}</dd>
+    </div>
+        <div>
+    <dt>Đạo diễn</dt>
+    <dd>${d.director}</dd>
+    </div>
+        <div>
+    <dt>Diễn viên</dt>
+    <dd>${d.cast}</dd>
+    </div>
+        <div>
+    <dt>Nhà sản xuất</dt>
+    <dd>${d.producer}</dd>
+    </div>
+        <div>
+    <dt>Quốc gia</dt>
+    <dd>${d.country}</dd>
+    </div>
+        <div>
+    <dt>Ngôn ngữ</dt>
+    <dd>${d.language}</dd>
+    </div>
+        <div>
+    <dt>Định dạng</dt>
+    <dd>${d.formats}</dd>
+    </div>
       </dl>
-      <p class="detail-source">Nguồn thông tin phim: <a href="${d.sourceUrl || '#'}" target="_blank" rel="noreferrer">${d.sourceName || 'Nguồn công khai'}</a></p>
+      <p class="detail-source">Nguồn thông tin phim: <a href="${d.sourceUrl || '#'}" target="_blank" rel="noreferrer">${d.sourceName || 'Nguồn công khai'}</a>
+    </p>
       
     </div>
   `
@@ -599,13 +1063,20 @@ const openMovieDetail = (title) => {
   document.body.style.overflow = 'hidden'
   document.querySelectorAll('#modalContent [data-detail-time]').forEach((chip) => {
     chip.addEventListener('click', () => {
-      document.querySelectorAll('#modalContent [data-detail-time]').forEach((c) => c.classList.remove('active'))
+      document
+        .querySelectorAll('#modalContent [data-detail-time]')
+        .forEach((c) => c.classList.remove('active'))
       chip.classList.add('active')
     })
   })
 }
 
 const closeModal = () => {
+  clearHoldTimer()
+  if (currentHoldId) {
+    releaseSeatHold(currentHoldId)
+    currentHoldId = null
+  }
   document.querySelector('#movieModal').hidden = true
   document.body.style.overflow = ''
 }
@@ -618,7 +1089,12 @@ document.addEventListener('click', (e) => {
   }
   const detailBuy = e.target.closest('[data-detail-buy]')
   if (detailBuy) {
-    if (!isAuthenticated()) { location.href = loginUrl(`/trangchu.html?movie=${encodeURIComponent(detailBuy.dataset.detailBuy)}#showing`); return }
+    if (!isAuthenticated()) {
+      location.href = loginUrl(
+        `/trangchu.html?movie=${encodeURIComponent(detailBuy.dataset.detailBuy)}#showing`,
+      )
+      return
+    }
     openModal(detailBuy.dataset.detailBuy, 'buy')
     return
   }
@@ -629,7 +1105,12 @@ document.addEventListener('click', (e) => {
   }
   const buy = e.target.closest('[data-buy]')
   if (buy) {
-    if (!isAuthenticated()) { location.href = loginUrl(`/trangchu.html?movie=${encodeURIComponent(buy.dataset.buy)}#showing`); return }
+    if (!isAuthenticated()) {
+      location.href = loginUrl(
+        `/trangchu.html?movie=${encodeURIComponent(buy.dataset.buy)}#showing`,
+      )
+      return
+    }
     openModal(buy.dataset.buy, 'buy')
     return
   }
@@ -641,58 +1122,6 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) closeModal()
 })
 
-
-// ---------- Admin login ----------
-const adminLoginOpen = document.querySelector('#adminLoginOpen')
-const adminLoginModal = document.querySelector('#adminLoginModal')
-const adminLoginForm = document.querySelector('#adminLoginForm')
-const adminUsername = document.querySelector('#adminUsername')
-const adminPassword = document.querySelector('#adminPassword')
-const adminLoginError = document.querySelector('#adminLoginError')
-
-const openAdminLogin = () => {
-  adminLoginError.textContent = ''
-  adminLoginModal.hidden = false
-  document.body.style.overflow = 'hidden'
-  setTimeout(() => adminUsername.focus(), 50)
-}
-const closeAdminLogin = () => {
-  adminLoginModal.hidden = true
-  document.body.style.overflow = ''
-}
-
-adminLoginOpen?.addEventListener('click', () => {
-  if (isAdminAuthenticated()) {
-    location.href = '/admin-phim.html'
-    return
-  }
-  openAdminLogin()
-})
-document.querySelectorAll('[data-admin-close]').forEach((el) => el.addEventListener('click', closeAdminLogin))
-
-adminLoginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault()
-  const user = adminUsername.value.trim()
-  const pass = adminPassword.value
-  const submit = adminLoginForm.querySelector('[type="submit"]')
-  submit.disabled = true
-  adminLoginError.textContent = ''
-  try {
-    const response = await fetch(apiUrl('/admin-login'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass }) })
-    if (!response.ok) throw new Error('invalid')
-    const account = await response.json()
-    if (account.role !== 'admin') throw new Error('invalid')
-    setAdminSession(account.username || account.email)
-    adminLoginForm.reset()
-    location.href = '/admin-phim.html'
-  } catch {
-    adminLoginError.textContent = 'Tài khoản hoặc mật khẩu admin chưa đúng.'
-    adminPassword.select()
-  } finally {
-    submit.disabled = false
-  }
-})
-
 let activeRegion = 'north'
 let activeTheater = theaters.find((t) => t.region === activeRegion)?.id || theaters[0].id
 
@@ -700,7 +1129,8 @@ const updateActiveTheater = (theaterId) => {
   const th = theaters.find((t) => t.id === theaterId)
   if (!th) return
   activeTheater = theaterId
-  document.querySelector('#theaterAddr').textContent = `${th.name} · ${th.addr} · ${th.screens} phòng chiếu`
+  document.querySelector('#theaterAddr').textContent =
+    `${th.name} · ${th.addr} · ${th.screens} phòng chiếu`
   document.querySelector('#showtimesBox').innerHTML = renderShowtimes(th.id)
 }
 
@@ -719,8 +1149,9 @@ document.querySelectorAll('.region-tab').forEach((tab) => {
   })
 })
 
-document.querySelector('#theaterSelect').addEventListener('change', (e) => updateActiveTheater(e.target.value))
-
+document
+  .querySelector('#theaterSelect')
+  .addEventListener('change', (e) => updateActiveTheater(e.target.value))
 
 // Bộ lọc phim theo yêu cầu tìm kiếm/lọc trong SRS
 const filterBar = document.querySelector('#movieFilter')
@@ -748,8 +1179,12 @@ const updateUpcomingShowtimes = () => {
   const date = upcomingShowtimes[upcomingDate]
   const theater = theaters.find((t) => t.id === upcomingTheater)
   if (!date || !theater) return
-  document.querySelector('#upcomingSub').textContent = `${date.label} · ${theater.name} · ${theater.addr}`
-  document.querySelector('#upcomingBox').innerHTML = renderUpcomingShowtimes(upcomingDate, upcomingTheater)
+  document.querySelector('#upcomingSub').textContent =
+    `${date.label} · ${theater.name} · ${theater.addr}`
+  document.querySelector('#upcomingBox').innerHTML = renderUpcomingShowtimes(
+    upcomingDate,
+    upcomingTheater,
+  )
 }
 
 document.querySelectorAll('.upcoming-date-tab').forEach((tab) => {
@@ -805,39 +1240,56 @@ searchInput.addEventListener('input', () => {
 })
 
 const toTop = document.querySelector('#toTop')
-window.addEventListener('scroll', () => {
-  toTop.classList.toggle('show', window.scrollY > 600)
-}, { passive: true })
+window.addEventListener(
+  'scroll',
+  () => {
+    toTop.classList.toggle('show', window.scrollY > 600)
+  },
+  { passive: true },
+)
 toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }))
 
 document.addEventListener('click', (e) => {
   const chip = e.target.closest('.time-chip')
   if (chip && !chip.dataset.time && !chip.dataset.detailTime) chip.classList.toggle('active')
   const closeTicket = e.target.closest('[data-close-ticket]')
-  if (closeTicket) { closeModal(); return }
+  if (closeTicket) {
+    closeModal()
+    return
+  }
   const viewTicket = e.target.closest('[data-view-ticket]')
   if (viewTicket) {
-    const booking = storageGet('cgv_bookings_v1', []).find((b) => b.code === viewTicket.dataset.viewTicket)
+    const booking = storageGet('cgv_bookings_v1', []).find(
+      (b) => b.code === viewTicket.dataset.viewTicket,
+    )
     if (booking) renderTicket(booking)
     return
   }
 })
 
 // Đồng bộ thư viện phim trên trang chủ với json-server của trang quản lý.
-const cleanCatalogText = (value, fallback = '') => String(value ?? fallback).replace(/[<>"']/g, '').trim()
+const cleanCatalogText = (value, fallback = '') =>
+  String(value ?? fallback)
+    .replace(/[<>"']/g, '')
+    .trim()
 const safeCatalogPoster = (value, fallback = '') => {
   try {
     const url = new URL(value || fallback, window.location.origin)
     return ['http:', 'https:'].includes(url.protocol) ? url.href : fallback
-  } catch { return fallback }
+  } catch {
+    return fallback
+  }
 }
 const formatCatalogDate = (value) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
   return match ? `${match[3]}/${match[2]}/${match[1]}` : 'Đang cập nhật'
 }
 const apiMovieToCatalogMovie = (movie) => {
-  const base = seedMoviesById[String(movie.id)] || allMovies.find((item) => item.title === movie.title) || {}
-  const status = ['showing', 'upcoming', 'archived'].includes(movie.status) ? movie.status : 'upcoming'
+  const base =
+    seedMoviesById[String(movie.id)] || allMovies.find((item) => item.title === movie.title) || {}
+  const status = ['showing', 'upcoming', 'archived'].includes(movie.status)
+    ? movie.status
+    : 'upcoming'
   const duration = Math.max(1, Number(movie.duration) || 120)
   const category = cleanCatalogText(movie.genre, 'Đang cập nhật')
   const release = formatCatalogDate(movie.releaseDate)
@@ -859,12 +1311,14 @@ const apiMovieToCatalogMovie = (movie) => {
     date: status === 'upcoming' ? release.slice(0, 5) : undefined,
     releaseDate: movie.releaseDate,
     status,
-    times: status === 'showing' ? (base.times || ['10:00', '12:30', '15:00', '17:30', '20:00']) : [],
+    times: status === 'showing' ? base.times || ['10:00', '12:30', '15:00', '17:30', '20:00'] : [],
   }
 }
 
 const renderSyncedCatalog = (managedMovies) => {
-  const synced = managedMovies.map(apiMovieToCatalogMovie).filter((movie) => movie.status !== 'archived')
+  const synced = managedMovies
+    .map(apiMovieToCatalogMovie)
+    .filter((movie) => movie.status !== 'archived')
   const syncedShowing = synced.filter((movie) => movie.status === 'showing')
   const syncedComing = synced.filter((movie) => movie.status === 'upcoming')
   const syncedVietnamese = synced.filter((movie) => movie.origin === 'vn')
@@ -874,21 +1328,44 @@ const renderSyncedCatalog = (managedMovies) => {
   allMovies.splice(0, allMovies.length, ...synced)
   vietnameseMovies.splice(0, vietnameseMovies.length, ...syncedVietnamese)
 
-  document.querySelector('#movieGrid2026').innerHTML = showing.map((movie) => movieCard(movie, { btn: true })).join('') || '<p class="empty-showtimes">Chưa có phim đang chiếu.</p>'
-  document.querySelector('#vietnamMovieGrid').innerHTML = vietnameseMovies.slice(0, 8).map((movie) => movieCard(movie, { btn: movie.status === 'showing', detailOnly: movie.status !== 'showing', player: movie.status !== 'showing' })).join('') || '<p class="empty-showtimes">Chưa có phim Việt trong thư viện.</p>'
-  document.querySelector('#comingMovieGrid').innerHTML = comingSoon.map((movie) => movieCard(movie, { player: true, detailOnly: true })).join('') || '<p class="empty-showtimes">Chưa có phim sắp chiếu.</p>'
+  document.querySelector('#movieGrid2026').innerHTML =
+    showing.map((movie) => movieCard(movie, { btn: true })).join('') ||
+    '<p class="empty-showtimes">Chưa có phim đang chiếu.</p>'
+  document.querySelector('#vietnamMovieGrid').innerHTML =
+    vietnameseMovies
+      .slice(0, 8)
+      .map((movie) =>
+        movieCard(movie, {
+          btn: movie.status === 'showing',
+          detailOnly: movie.status !== 'showing',
+          player: movie.status !== 'showing',
+        }),
+      )
+      .join('') || '<p class="empty-showtimes">Chưa có phim Việt trong thư viện.</p>'
+  document.querySelector('#comingMovieGrid').innerHTML =
+    comingSoon.map((movie) => movieCard(movie, { player: true, detailOnly: true })).join('') ||
+    '<p class="empty-showtimes">Chưa có phim sắp chiếu.</p>'
 
   const featured = [...showing, ...comingSoon].slice(0, 4)
-  document.querySelector('#heroPosterWall').innerHTML = featured.map((movie, index) => `
+  document.querySelector('#heroPosterWall').innerHTML = featured
+    .map(
+      (movie, index) => `
     <article class="hero-mini-poster p${index + 1}" data-detail="${movie.title}">
       <img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${movie.image || movie.fallback}" alt="Poster ${movie.title}" onerror="this.onerror=null;this.src='${movie.fallback || ''}'" />
-      <div class="hero-mini-shade"></div>
-      <div class="hero-mini-copy"><span>${movie.origin === 'vn' ? 'PHIM VIỆT' : movie.country}</span><strong>${movie.title}</strong></div>
-    </article>`).join('')
+      <div class="hero-mini-shade">
+        </div>
+      <div class="hero-mini-copy">
+        <span>${movie.origin === 'vn' ? 'PHIM VIỆT' : movie.country}</span>
+        <strong>${movie.title}</strong>
+        </div>
+    </article>`,
+    )
+    .join('')
 
   document.querySelector('#homeMovieCount').textContent = synced.length
   document.querySelector('#homeVnCount').textContent = syncedVietnamese.length
-  document.querySelector('#homeVnLabel').textContent = `${syncedVietnamese.length} phim Việt nổi bật`
+  document.querySelector('#homeVnLabel').textContent =
+    `${syncedVietnamese.length} phim Việt nổi bật`
 }
 
 let catalogSnapshot = ''
@@ -905,11 +1382,15 @@ const syncHomepageCatalog = async () => {
       renderSyncedCatalog(managedMovies)
       catalogSnapshot = nextSnapshot
     }
-  } catch { /* giữ dữ liệu cục bộ, không làm gián đoạn giao diện */ }
+  } catch {
+    /* giữ dữ liệu cục bộ, không làm gián đoạn giao diện */
+  }
 }
 
 syncHomepageCatalog()
-window.addEventListener('storage', (event) => { if (event.key === 'cgv_movie_cache_v1') syncHomepageCatalog() })
+window.addEventListener('storage', (event) => {
+  if (event.key === 'cgv_movie_cache_v1') syncHomepageCatalog()
+})
 
 const requestedMovie = new URLSearchParams(location.search).get('movie')
 if (requestedMovie) setTimeout(() => openMovieDetail(requestedMovie), 120)

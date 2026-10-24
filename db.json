@@ -378,5 +378,25 @@
       "status": "open"
     }
   ],
-  "users": []
+  "users": [
+    {
+      "email": "duypz@gmail.com",
+      "password": "$2a$10$wQ/0Sni7UkgEYEvfhl8qtehxwUbP/GBSPlUGpFYlu6BPvQMVpqpJy",
+      "name": "Nguyễn Duy Phong",
+      "fullName": "Nguyễn Duy Phong",
+      "role": "customer",
+      "createdAt": "2026-10-14T07:45:30.219Z",
+      "id": 1
+    },
+    {
+      "id": 2,
+      "username": "cgvteam",
+      "email": "cgvteam@admin.local",
+      "password": "$2a$10$W9WeMpU9Mt3EALLAAsRrbelyClRxtAeVkgaolHBLmOM80siPnofPG",
+      "name": "CGV Administrator",
+      "fullName": "CGV Administrator",
+      "role": "admin",
+      "createdAt": "2026-10-16T08:14:23.798Z"
+    }
+  ]
 }
