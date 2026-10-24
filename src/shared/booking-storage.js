@@ -1,3 +1,5 @@
+import { apiUrl } from './api.js'
+
 // Module lưu trữ dùng chung cho vé, sơ đồ ghế và ghế đang được giữ tạm.
 // Dữ liệu bản demo nằm trong localStorage của trình duyệt.
 // Tên các khóa lưu trữ và thông tin thanh toán mặc định.
@@ -49,6 +51,18 @@ export async function syncLocalBookings(user) {
 
 // Lưu vé mới lên đầu danh sách và thay thế bản ghi trùng mã vé.
 export async function createUserBooking(booking) {
+  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  if (token) {
+    const response = await fetch(apiUrl('/my-bookings'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(booking),
+    })
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(result.message || 'Không thể lưu vé.')
+    saveBookings([result, ...getBookings().filter((item) => item.code !== result.code)])
+    return result
+  }
   saveBookings([booking, ...getBookings().filter((item) => item.code !== booking.code)])
   return booking
 }
@@ -60,10 +74,29 @@ export async function deleteUserBooking(code) {
 
 // Các hàm quản trị: tải, cập nhật trạng thái và xóa vé.
 export async function loadAdminBookings() {
+  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  if (token) {
+    const response = await fetch(apiUrl('/admin/bookings'), { headers: { Authorization: `Bearer ${token}` } })
+    const result = await response.json().catch(() => [])
+    if (!response.ok) throw new Error(result.message || 'Không tải được vé.')
+    saveBookings(result)
+    return result
+  }
   return getBookings()
 }
 
 export async function updateAdminBookingStatus(code, paymentStatus) {
+  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  if (token) {
+    const response = await fetch(apiUrl(`/admin/bookings/${encodeURIComponent(code)}`), {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ paymentStatus }),
+    })
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(result.message || 'Không cập nhật được vé.')
+    saveBookings(getBookings().map((item) => item.code === code ? result : item))
+    return result
+  }
   const bookings = getBookings()
   const booking = bookings.find((item) => item.code === code)
   if (!booking) throw new Error('Không tìm thấy vé cần cập nhật.')
@@ -73,6 +106,16 @@ export async function updateAdminBookingStatus(code, paymentStatus) {
 }
 
 export async function deleteAdminBooking(code) {
+  const token = localStorage.getItem('cgv_auth_token_v1') || ''
+  if (token) {
+    const response = await fetch(apiUrl(`/admin/bookings/${encodeURIComponent(code)}`), {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}))
+      throw new Error(result.message || 'Không xóa được vé.')
+    }
+  }
   saveBookings(getBookings().filter((booking) => booking.code !== code))
 }
 

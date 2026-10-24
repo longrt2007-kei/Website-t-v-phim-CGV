@@ -618,7 +618,7 @@ const renderHoldExpired = (m, theaterId, date, time, seats) => {
 }
 
 // Mở sơ đồ ghế, đánh dấu ghế trống/đang giữ/đã đặt và xử lý chọn ghế.
-const openSeatSelection = (m, theaterId, date, time) => {
+const openSeatSelection = async (m, theaterId, date, time) => {
   clearHoldTimer()
   if (currentHoldId) {
     releaseSeatHold(currentHoldId)
@@ -626,7 +626,15 @@ const openSeatSelection = (m, theaterId, date, time) => {
   }
   const key = bookingKey(m.title, theaterId, date, time)
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
-  const occupied = occupiedMap[key] || ['A2', 'B5', 'C7', 'D4', 'F8']
+  let occupied = occupiedMap[key] || []
+  try {
+    const params = new URLSearchParams({ movie: m.title, theaterId, date, time })
+    const response = await fetch(apiUrl(`/show-seats?${params}`))
+    if (response.ok) {
+      const result = await response.json()
+      occupied = [...new Set(result.seats || [])]
+    }
+  } catch {}
   const heldSeats = getHeldSeats(key)
   const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
   const theater = theaters.find((t) => t.id === theaterId)
@@ -845,8 +853,20 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
     storageSet('cgv_seat_state_v1', occupiedMap)
-    const savedBooking = await createUserBooking(booking)
-    renderTicket(savedBooking)
+    try {
+      const savedBooking = await createUserBooking(booking)
+      renderTicket(savedBooking)
+    } catch (error) {
+      storageSet('cgv_bookings_v1', bookings.filter((item) => item.code !== booking.code))
+      occupiedMap[key] = (occupiedMap[key] || []).filter((seat) => !seats.includes(seat))
+      storageSet('cgv_seat_state_v1', occupiedMap)
+      const alertBox = document.querySelector('#seatConflictAlert')
+      if (alertBox) {
+        alertBox.textContent = error.message || 'Ghế vừa được người khác đặt. Vui lòng chọn ghế khác.'
+        alertBox.hidden = false
+      }
+      openSeatSelection(m, theaterId, date, time)
+    }
   })
 }
 

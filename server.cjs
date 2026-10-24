@@ -101,6 +101,17 @@ const ensureBookings = () => {
   return router.db.get('bookings')
 }
 
+// Ghế đã đặt được suy ra từ vé còn hiệu lực để mọi thiết bị dùng chung trạng thái.
+app.get('/show-seats', (req, res) => {
+  const { movie, theaterId, date, time } = req.query
+  if (!movie || !theaterId || !date || !time) return res.status(400).json({ message: 'Thiếu thông tin suất chiếu.' })
+  const key = `${movie}__${theaterId}__${date}__${time}`
+  const occupied = ensureBookings().value()
+    .filter((booking) => `${booking.movie}__${booking.theaterId}__${booking.date}__${booking.time}` === key && booking.paymentStatus !== 'Đã hủy' && booking.paymentStatus !== 'Đã hoàn tiền')
+    .flatMap((booking) => booking.seats || [])
+  res.json({ seats: [...new Set(occupied)] })
+})
+
 const requireUser = (req, res) => {
   const session = readTokenUser(req)
   if (!session) {
@@ -147,6 +158,14 @@ app.post('/my-bookings', (req, res) => {
   const collection = ensureBookings()
   const existing = collection.find({ code: String(payload.code) }).value()
   if (existing) return res.status(409).json({ message: 'Mã vé đã tồn tại.' })
+  const requestedSeats = payload.seats.map(String)
+  const conflict = collection.value().find((booking) =>
+    booking.movie === String(payload.movie) && booking.theaterId === String(payload.theaterId || '') &&
+    booking.date === String(payload.date || '') && booking.time === String(payload.time || '') &&
+    booking.paymentStatus !== 'Đã hủy' && booking.paymentStatus !== 'Đã hoàn tiền' &&
+    (booking.seats || []).some((seat) => requestedSeats.includes(String(seat))),
+  )
+  if (conflict) return res.status(409).json({ message: `Ghế ${requestedSeats.find((seat) => conflict.seats.map(String).includes(seat))} đã có người đặt.` })
   const booking = {
     code: String(payload.code),
     userId: String(session.user.id),
@@ -156,7 +175,7 @@ app.post('/my-bookings', (req, res) => {
     theaterName: String(payload.theaterName || ''),
     date: String(payload.date || ''),
     time: String(payload.time || ''),
-    seats: payload.seats.map(String),
+    seats: requestedSeats,
     amount: Number(payload.amount || 0),
     paymentMethod: String(payload.paymentMethod || ''),
     paymentAccount: String(payload.paymentAccount || ''),
