@@ -16,12 +16,14 @@
 .seat-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .seat-dot { width: 12px; height: 12px; border-radius: 4px; background: #e6e9ee; }
 .seat-dot.booked { background: #e22f3e; }
+.seat-dot.held { background: #f0a328; }
 .screen-label-admin { width: min(560px, 80%); margin: 26px auto 23px; padding: 8px; border-radius: 0 0 50% 50%; background: linear-gradient(180deg, #e9edf2, #fff); color: #737a85; font-size: 10px; letter-spacing: 3px; text-align: center; }
 .admin-seat-map { display: grid; gap: 9px; width: max-content; max-width: 100%; margin: 0 auto; overflow-x: auto; }
 .admin-seat-row { display: flex; align-items: center; gap: 8px; }
 .row-label { width: 16px; color: #868c96; font-size: 11px; text-align: center; }
 .admin-seat { width: 34px; height: 30px; display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 7px 7px 4px 4px; background: #f0f2f5; color: #626a76; font-size: 9px; }
 .admin-seat.is-booked { border-color: #ca1e2c; background: #e33342; color: #fff; }
+.admin-seat.is-held { border-color: #d88b13; background: #f0a328; color: #fff; }
 .seat-footnote { margin-top: 18px; color: #858b95; font-size: 11px; text-align: center; }
 @media (max-width: 700px) {
   .room-list { grid-template-columns: 1fr; padding: 12px; }
