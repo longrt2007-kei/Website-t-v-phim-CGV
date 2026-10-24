@@ -1,0 +1,27 @@
+.ticket-seats-cell { display: grid; gap: 7px; min-width: 115px; }
+.ticket-seats-cell strong { overflow-wrap: anywhere; }
+.ticket-seats-cell .icon-button { justify-self: start; }
+.admin-seat-editor { width: min(720px, calc(100vw - 28px)); max-width: none; max-height: 90vh; overflow: auto; padding: 24px; border: 0; border-radius: 14px; box-shadow: 0 24px 80px #0004; }
+.admin-seat-editor::backdrop { background: #10152299; }
+.seat-editor-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.seat-editor-head h2 { margin: 0; }
+.seat-editor-head p { margin: 6px 0 0; color: #737983; font-size: 13px; }
+.seat-editor-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; color: #626a76; font-size: 12px; }
+.seat-editor-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.seat-editor-dot { width: 13px; height: 13px; border: 1px solid #d8dee7; border-radius: 4px; background: #f0f2f5; }
+.seat-editor-dot.selected { border-color: #ca1e2c; background: #e33342; }
+.seat-editor-dot.unavailable { border-color: #9b6713; background: #edaa37; }
+.seat-editor-screen { width: min(540px, 84%); margin: 24px auto 18px; padding: 8px; border-radius: 0 0 50% 50%; background: linear-gradient(180deg, #e9edf2, #fff); color: #737a85; font-size: 10px; letter-spacing: 3px; text-align: center; }
+.seat-editor-map { display: grid; gap: 8px; width: max-content; max-width: 100%; margin: 0 auto; overflow-x: auto; }
+.seat-editor-row { display: flex; align-items: center; gap: 7px; }
+.seat-editor-row > span { width: 16px; color: #777f8b; font-size: 11px; text-align: center; }
+.seat-editor-seat { width: 42px; height: 34px; border: 1px solid #d8dee7; border-radius: 7px 7px 4px 4px; background: #f0f2f5; color: #525a66; font-size: 10px; }
+.seat-editor-seat.selected { border-color: #ca1e2c; background: #e33342; color: #fff; }
+.seat-editor-seat.unavailable, .seat-editor-seat:disabled { border-color: #9b6713; background: #edaa37; color: #fff; cursor: not-allowed; opacity: 1; }
+.seat-editor-hint { margin: 16px 0; color: #737983; font-size: 12px; text-align: center; }
+.admin-seat-editor .dialog-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
+@media (max-width: 560px) {
+  .admin-seat-editor { padding: 17px; }
+  .seat-editor-row { gap: 4px; }
+  .seat-editor-seat { width: 30px; height: 30px; font-size: 8px; }
+}

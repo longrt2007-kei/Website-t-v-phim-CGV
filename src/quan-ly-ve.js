@@ -1,14 +1,18 @@
 ﻿import './quan-tri.css'
 import './quan-tri-toi.css'
+import './quan-ly-ve.css'
 import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import {
   releaseBookingSeats,
   money,
   formatDateTime,
   getSeatHolds,
+  getHeldSeats,
+  bookingKey,
   loadSeatHolds,
   loadAdminBookings,
   updateAdminBookingStatus,
+  updateAdminBookingSeats,
   deleteAdminBooking,
   createBookingDeletionNotification,
 } from './shared/booking-storage.js'
@@ -102,9 +106,21 @@ ${adminNav('tickets')}
   <span>© 2026 CGV Studio</span>
   <span>Hệ thống quản lý vé CGV.</span>
   </footer>
-  </main>`
+  </main>
+<dialog id="seatEditor" class="admin-seat-editor">
+  <div class="seat-editor-head"><div><h2 id="seatEditorTitle">Chỉnh sửa ghế</h2><p id="seatEditorInfo"></p></div><button type="button" class="icon-button" data-close-seat-editor>Đóng</button></div>
+  <div class="seat-editor-legend"><span><i class="seat-editor-dot"></i>Còn trống</span><span><i class="seat-editor-dot selected"></i>Ghế trên vé này</span><span><i class="seat-editor-dot unavailable"></i>Vé khác / đang giữ</span></div>
+  <div class="seat-editor-screen">MÀN HÌNH</div>
+  <div id="seatEditorMap" class="seat-editor-map"></div>
+  <p class="seat-editor-hint">Chọn hoặc bỏ chọn ghế. Không thể chọn ghế đã có vé khác hoặc đang được giữ.</p>
+  <div id="seatEditorError" class="alert" hidden></div>
+  <div class="dialog-footer"><button type="button" class="button" data-close-seat-editor>Hủy</button><button type="button" class="button primary" id="saveTicketSeats">Lưu ghế</button></div>
+</dialog>`
 
 const $ = (s) => document.querySelector(s)
+let editingTicket = null
+let selectedSeats = new Set()
+let unavailableSeats = new Set()
 // Lọc vé theo từ khóa/trạng thái rồi sắp xếp theo lựa chọn trên trang.
 function filtered() {
   const q = $('#search').value.trim().toLowerCase(),
@@ -163,7 +179,7 @@ function render() {
           <td>${esc(theaterName(t))}<br>
           <small>${esc(t.date)} · ${esc(t.time)}</small>
           </td>
-          <td>${esc((t.seats || []).join(', '))}</td>
+          <td><div class="ticket-seats-cell"><strong>${esc((t.seats || []).join(', '))}</strong><button type="button" class="icon-button" data-edit-seats="${esc(t.code)}">Sửa ghế</button></div></td>
           <td><strong>${esc(t.userName || 'Chưa có tên')}</strong><br><small>${esc(t.userEmail || 'Không có email')}</small><br><small>ID: ${esc(t.userId || '—')}</small></td>
           <td>
           <select class="ticket-status" data-code="${esc(t.code)}">
@@ -203,6 +219,36 @@ async function refreshTickets() {
     $('#empty').textContent = `Không tải được danh sách vé: ${error.message}`
   }
 }
+
+function renderSeatEditor() {
+  const rows = 'ABCDEFGH'.split('')
+  $('#seatEditorMap').innerHTML = rows.map((row) => `<div class="seat-editor-row"><span>${row}</span>${Array.from({ length: 10 }, (_, index) => {
+    const seat = `${row}${index + 1}`
+    const unavailable = unavailableSeats.has(seat) && !selectedSeats.has(seat)
+    const selected = selectedSeats.has(seat)
+    return `<button type="button" class="seat-editor-seat ${selected ? 'selected' : unavailable ? 'unavailable' : ''}" data-editor-seat="${seat}" ${unavailable ? 'disabled' : ''} title="Ghế ${seat}">${seat}</button>`
+  }).join('')}</div>`).join('')
+  $('#seatEditorInfo').textContent = `${editingTicket?.movie || ''} · ${editingTicket?.date || ''} ${editingTicket?.time || ''} · ${selectedSeats.size} ghế đang chọn`
+}
+
+async function openSeatEditor(ticket) {
+  editingTicket = ticket
+  selectedSeats = new Set((ticket.seats || []).map(String))
+  unavailableSeats = new Set()
+  $('#seatEditorError').hidden = true
+  await loadSeatHolds()
+  for (const other of tickets) {
+    if (other.code === ticket.code || ['Đã hủy', 'Đã hoàn tiền'].includes(other.paymentStatus)) continue
+    if (bookingKey(other) === bookingKey(ticket)) {
+      for (const seat of other.seats || []) unavailableSeats.add(String(seat))
+    }
+  }
+  for (const seat of getHeldSeats(bookingKey(ticket))) unavailableSeats.add(String(seat))
+  for (const seat of selectedSeats) unavailableSeats.delete(seat)
+  $('#seatEditorTitle').textContent = `Chỉnh sửa ghế vé ${ticket.code}`
+  renderSeatEditor()
+  $('#seatEditor').showModal()
+}
 function status(ticket, value) {
   return (ticket.paymentStatus || 'Đã thanh toán') === value ? 'selected' : ''
 }
@@ -224,6 +270,12 @@ $('#rows').addEventListener('change', async (e) => {
 })
 // Xóa vé theo xác nhận và mở lại các ghế thuộc vé đó.
 $('#rows').addEventListener('click', async (e) => {
+  const editSeats = e.target.closest('[data-edit-seats]')
+  if (editSeats) {
+    const ticket = tickets.find((item) => item.code === editSeats.dataset.editSeats)
+    if (ticket) await openSeatEditor(ticket)
+    return
+  }
   const b = e.target.closest('[data-delete]')
   if (!b) return
   const ticket = tickets.find((t) => t.code === b.dataset.delete)
@@ -237,6 +289,37 @@ $('#rows').addEventListener('click', async (e) => {
     render()
   } catch (error) {
     alert(`Không xóa được vé: ${error.message}`)
+  }
+})
+$('#seatEditorMap').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-editor-seat]')
+  if (!button || button.disabled) return
+  const seat = button.dataset.editorSeat
+  if (selectedSeats.has(seat)) selectedSeats.delete(seat)
+  else selectedSeats.add(seat)
+  renderSeatEditor()
+})
+$('#seatEditor').addEventListener('click', (event) => {
+  if (event.target.closest('[data-close-seat-editor]')) $('#seatEditor').close()
+})
+$('#saveTicketSeats').addEventListener('click', async (event) => {
+  if (!editingTicket || !selectedSeats.size) {
+    $('#seatEditorError').textContent = 'Vé phải còn ít nhất một ghế.'
+    $('#seatEditorError').hidden = false
+    return
+  }
+  const button = event.currentTarget
+  button.disabled = true
+  try {
+    const updated = await updateAdminBookingSeats(editingTicket.code, [...selectedSeats])
+    tickets = tickets.map((ticket) => ticket.code === updated.code ? updated : ticket)
+    $('#seatEditor').close()
+    render()
+  } catch (error) {
+    $('#seatEditorError').textContent = error.message || 'Không cập nhật được ghế.'
+    $('#seatEditorError').hidden = false
+  } finally {
+    button.disabled = false
   }
 })
 window.addEventListener('storage', (event) => {

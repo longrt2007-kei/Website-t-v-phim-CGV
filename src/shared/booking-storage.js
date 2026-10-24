@@ -111,6 +111,29 @@ export async function updateAdminBookingStatus(code, paymentStatus) {
   return booking
 }
 
+export async function updateAdminBookingSeats(code, seats) {
+  const token = getAdminApiToken()
+  if (token) {
+    const response = await fetch(apiUrl(`/admin/bookings/${encodeURIComponent(code)}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ seats }),
+    })
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(result.message || 'Không cập nhật được ghế của vé.')
+    saveBookings(getBookings().map((item) => item.code === code ? result : item))
+    return result
+  }
+  const bookings = getBookings()
+  const booking = bookings.find((item) => item.code === code)
+  if (!booking) throw new Error('Không tìm thấy vé cần cập nhật.')
+  const unitPrice = Number(booking.amount || 85000 * (booking.seats || []).length) / Math.max(1, (booking.seats || []).length)
+  booking.seats = [...seats]
+  booking.amount = Math.round(unitPrice * seats.length)
+  saveBookings(bookings)
+  return booking
+}
+
 export async function deleteAdminBooking(code) {
   const token = getAdminApiToken()
   if (token) {
