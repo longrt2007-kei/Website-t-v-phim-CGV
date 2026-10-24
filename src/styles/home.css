@@ -3421,6 +3421,16 @@ body {
   font-size: 30px;
   margin: 6px 0;
 }
+.ticket-sync-warning {
+  max-width: 620px;
+  margin: 12px auto;
+  padding: 10px 12px;
+  border: 1px solid #f0bd62;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #80550b;
+  font-size: 13px;
+}
 .ticket-code {
   padding: 10px 14px;
   background: #f7f2ec;
