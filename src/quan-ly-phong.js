@@ -196,6 +196,7 @@ window.addEventListener('storage', (event) => {
   if (!event.key || event.key === STORAGE_KEY || event.key === 'cgv_bookings_v1' || event.key === 'cgv_demo_shared_holds_v1' || event.key === 'cgv_seat_holds_v1') {
     rooms = readRooms()
     holds = getSeatHolds()
+    loadSeatHolds().then((value) => { holds = value; render() }).catch(() => {})
     loadAdminBookings().then((value) => { bookings = value; render() }).catch(render)
     render()
   }
@@ -206,8 +207,10 @@ window.addEventListener('cgv-seat-holds-change', () => {
 })
 setInterval(() => {
   if (!document.hidden) {
-    holds = getSeatHolds()
-    render()
+    loadSeatHolds().then((value) => { holds = value; render() }).catch(() => {
+      holds = getSeatHolds()
+      render()
+    })
   }
 }, 3000)
 load()
