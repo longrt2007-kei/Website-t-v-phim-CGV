@@ -5,6 +5,7 @@ export function adminNav(active) {
   const items = [
     ['movies', '/quan-ly-phim.html', '▣', 'Quản lý phim'],
     ['theaters', '/quan-ly-rap.html', '⌂', 'Quản lý rạp'],
+    ['rooms', '/quan-ly-phong.html', '▦', 'Quản lý phòng'],
     ['showtimes', '/quan-ly-suat-chieu.html', '◷', 'Quản lý suất chiếu'],
     ['tickets', '/quan-ly-ve.html', '🎟', 'Quản lý vé'],
   ]

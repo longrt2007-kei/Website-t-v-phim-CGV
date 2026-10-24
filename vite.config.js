@@ -30,6 +30,7 @@ export default defineConfig({
         dangNhapQuanTri: resolve(__dirname, 'dang-nhap-quan-tri.html'),
         quanLyPhim: resolve(__dirname, 'quan-ly-phim.html'),
         quanLyRap: resolve(__dirname, 'quan-ly-rap.html'),
+        quanLyPhong: resolve(__dirname, 'quan-ly-phong.html'),
         quanLySuatChieu: resolve(__dirname, 'quan-ly-suat-chieu.html'),
         quanLyVe: resolve(__dirname, 'quan-ly-ve.html'),
         dangNhap: resolve(__dirname, 'dang-nhap.html'),
