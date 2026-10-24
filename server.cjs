@@ -296,14 +296,45 @@ app.get('/admin/bookings', (req, res) => {
 app.patch('/admin/bookings/:code', (req, res) => {
   if (!requireAdminUser(req, res)) return
   const allowedStatuses = ['Đã thanh toán', 'Chờ xác nhận', 'Đã hoàn tiền', 'Đã hủy']
-  if (!allowedStatuses.includes(req.body?.paymentStatus)) {
+  if (req.body?.paymentStatus != null && !allowedStatuses.includes(req.body.paymentStatus)) {
     return res.status(400).json({ message: 'Trạng thái vé không hợp lệ.' })
   }
   const collection = ensureBookings()
-  if (!collection.find({ code: req.params.code }).value()) {
-    return res.status(404).json({ message: 'Không tìm thấy vé.' })
+  const current = collection.find({ code: req.params.code }).value()
+  if (!current) return res.status(404).json({ message: 'Không tìm thấy vé.' })
+  const updates = {}
+  if (req.body?.paymentStatus != null) updates.paymentStatus = req.body.paymentStatus
+  if (req.body?.seats != null) {
+    if (!Array.isArray(req.body.seats) || !req.body.seats.length) {
+      return res.status(400).json({ message: 'Vé cần có ít nhất một ghế.' })
+    }
+    const seats = [...new Set(req.body.seats.map(String))]
+    if (seats.some((seat) => !/^[A-H](?:[1-9]|10)$/.test(seat))) {
+      return res.status(400).json({ message: 'Mã ghế không hợp lệ.' })
+    }
+    const conflict = collection.value().find((booking) =>
+      booking.code !== current.code && booking.movie === current.movie && booking.theaterId === current.theaterId &&
+      booking.date === current.date && booking.time === current.time &&
+      !['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus) &&
+      (booking.seats || []).some((seat) => seats.includes(String(seat))),
+    )
+    if (conflict) {
+      const seat = conflict.seats.map(String).find((value) => seats.includes(value))
+      return res.status(409).json({ message: `Ghế ${seat} đã có vé khác.` })
+    }
+    const key = `${current.movie}__${current.theaterId}__${current.date}__${current.time}`
+    const holdConflict = ensureSeatHolds().value().find((hold) => hold.key === key && (hold.seats || []).some((seat) => seats.includes(String(seat))))
+    if (holdConflict) {
+      const seat = holdConflict.seats.map(String).find((value) => seats.includes(value))
+      return res.status(409).json({ message: `Ghế ${seat} đang được khách khác giữ chỗ.` })
+    }
+    const currentCount = Math.max(1, (current.seats || []).length)
+    const unitPrice = Number(current.amount || 85000 * currentCount) / currentCount
+    updates.seats = seats
+    updates.amount = Math.round(unitPrice * seats.length)
   }
-  const booking = collection.find({ code: req.params.code }).assign({ paymentStatus: req.body.paymentStatus }).write()
+  if (!Object.keys(updates).length) return res.json(current)
+  const booking = collection.find({ code: req.params.code }).assign(updates).write()
   res.json(booking)
 })
 
