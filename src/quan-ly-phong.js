@@ -5,6 +5,7 @@ import { apiRequest, apiUrl } from './shared/api.js'
 import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { requireAdmin } from './shared/admin-auth.js'
 import { getSeatHolds, loadAdminBookings, loadSeatHolds } from './shared/booking-storage.js'
+import { theaters as bookingTheaters } from './data/home-catalog.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
@@ -152,19 +153,36 @@ function openEditor(room = null) {
 
 async function load() {
   try {
-    theaters = await apiRequest('theaters')
+    const adminTheaters = await apiRequest('theaters')
+    // The booking flow uses home-catalog; include that full list so every
+    // booked theater has a corresponding room in the admin map.
+    theaters = bookingTheaters.map((theater) => ({
+      ...adminTheaters.find((item) => String(item.id) === String(theater.id)),
+      id: theater.id,
+      name: theater.name,
+      address: theater.addr,
+      city: theater.city,
+      screens: theater.screens,
+      status: theater.status || 'active',
+    }))
+    for (const theater of adminTheaters) {
+      if (!theaters.some((item) => String(item.id) === String(theater.id))) theaters.push(theater)
+    }
     if (!theaters.length) throw new Error('Chưa có dữ liệu rạp. Hãy thêm rạp trước khi tạo phòng.')
     rooms = readRooms()
-    if (!rooms.length) {
-      rooms = theaters.flatMap((theater) => Array.from({ length: Math.max(1, Number(theater.screens) || 1) }, (_, index) => ({
+    let roomsChanged = false
+    for (const theater of theaters) {
+      if (rooms.some((room) => String(room.theaterId) === String(theater.id))) continue
+      rooms.push(...Array.from({ length: Math.max(1, Number(theater.screens) || 1) }, (_, index) => ({
         id: `${theater.id}-room-${String(index + 1).padStart(2, '0')}`,
         theaterId: theater.id,
         name: String(index + 1).padStart(2, '0'),
         type: theater.id === 'landmark-81' && index === 2 ? 'IMAX' : '2D',
         status: 'active',
       })))
-      writeRooms()
+      roomsChanged = true
     }
+    if (roomsChanged) writeRooms()
     try { bookings = await loadAdminBookings() } catch { bookings = [] }
     holds = await loadSeatHolds()
     await refreshRoomOccupancy()
