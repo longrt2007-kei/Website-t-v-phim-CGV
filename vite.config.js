@@ -29,6 +29,7 @@ export default defineConfig({
         admin: resolve(__dirname, 'admin.html'),
         adminPhim: resolve(__dirname, 'admin-phim.html'),
         adminRap: resolve(__dirname, 'admin-rap.html'),
+        adminPhong: resolve(__dirname, 'admin-phong.html'),
         adminSuatChieu: resolve(__dirname, 'admin-suat-chieu.html'),
         adminVe: resolve(__dirname, 'admin-ve.html'),
         dangNhap: resolve(__dirname, 'dang-nhap.html'),

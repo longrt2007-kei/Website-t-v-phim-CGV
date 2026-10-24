@@ -18,6 +18,8 @@ const storageSet = (key, value) => {
 }
 const bookingKey = (movie, theaterId, date, time) => `${movie}__${theaterId}__${date}__${time}`
 const ticketPrice = 85000
+const getServerBookings = async () => { try { const r = await fetch(apiUrl('/bookings')); return r.ok ? await r.json() : [] } catch { return [] } }
+const occupiedFor = (list, movie, theaterId, date, time) => list.filter(b => b.movie === movie && String(b.theaterId) === String(theaterId) && b.date === date && b.time === time && !['Đã hủy','Đã hoàn tiền'].includes(b.paymentStatus)).flatMap(b => b.seats || [])
 
 document.querySelector('#app').innerHTML = `
 <header class="header">
@@ -356,8 +358,6 @@ document.querySelector('#app').innerHTML = `
 const state = { modalMode: 'buy' }
 mountUserNav()
 
-const ADMIN_CREDENTIALS = { username: 'cgvteam', password: '66668888' }
-
 const PAYMENT_BANK = 'BIDV'
 const PAYMENT_ACCOUNT = '8855252740'
 const paymentQrUrl = (amount, content) => `https://img.vietqr.io/image/${PAYMENT_BANK}-${PAYMENT_ACCOUNT}-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(content)}`
@@ -389,7 +389,7 @@ const renderTicket = (booking) => {
 const openSeatSelection = (m, theaterId, date, time) => {
   const key = bookingKey(m.title, theaterId, date, time)
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
-  const occupied = occupiedMap[key] || ['A2', 'B5', 'C7', 'D4', 'F8']
+  const occupied = [...new Set([...(occupiedMap[key] || []), ...occupiedFor(storageGet('cgv_bookings_v1', []), m.title, theaterId, date, time)])]
   const rows = ['A','B','C','D','E','F','G','H']
   const theater = theaters.find((t) => t.id === theaterId)
   document.querySelector('#modalContent').innerHTML = `
@@ -416,7 +416,15 @@ const openSeatSelection = (m, theaterId, date, time) => {
     document.querySelector('#seatTotal').textContent = (selected.size * ticketPrice).toLocaleString('vi-VN') + 'đ'
     document.querySelector('#confirmSeatBtn').disabled = selected.size === 0
   }))
-  document.querySelector('#confirmSeatBtn').addEventListener('click', () => {
+  document.querySelector('#confirmSeatBtn').addEventListener('click', async () => {
+    const latest = await getServerBookings()
+    const unavailable = occupiedFor(latest, m.title, theaterId, date, time)
+    if ([...selected].some(seat => unavailable.includes(seat))) {
+      alert('Có ghế vừa được người khác đặt. Sơ đồ ghế sẽ được tải lại; vui lòng chọn ghế khác.')
+      storageSet('cgv_bookings_v1', latest)
+      openSeatSelection(m, theaterId, date, time)
+      return
+    }
     const seats = [...selected]
     openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key)
   })
@@ -446,10 +454,14 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
         <button type="button" class="btn btn-primary" id="paymentConfirmBtn">TÔI ĐÃ THANH TOÁN</button>
       </div>
     </div>`
-  document.querySelector('#paymentConfirmBtn').addEventListener('click', () => {
+  document.querySelector('#paymentConfirmBtn').addEventListener('click', async () => {
     const bookings = storageGet('cgv_bookings_v1', [])
     const currentUser = getCachedUser()
     const booking = { code, userId: currentUser?.id || null, userEmail: currentUser?.email || '', movie: m.title, theaterId, theaterName: theater?.name || theaterId, date, time, seats, amount, paymentMethod: `QR ${PAYMENT_BANK}`, paymentAccount: PAYMENT_ACCOUNT, paymentStatus: 'Đã thanh toán', createdAt: new Date().toISOString() }
+    const response = await fetch(apiUrl('/bookings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(booking) }).catch(() => null)
+    if (!response) { alert('Không kết nối được máy chủ đặt vé. Vui lòng thử lại.'); return }
+    if (response.status === 409) { alert('Ghế vừa được người khác đặt. Vui lòng chọn lại ghế.'); storageSet('cgv_bookings_v1', await getServerBookings()); openSeatSelection(m, theaterId, date, time); return }
+    if (!response.ok) { alert('Chưa thể xác nhận đặt vé. Vui lòng thử lại.'); return }
     bookings.unshift(booking)
     storageSet('cgv_bookings_v1', bookings)
     occupiedMap[key] = [...new Set([...(occupiedMap[key] || occupied), ...seats])]
@@ -658,18 +670,26 @@ adminLoginOpen?.addEventListener('click', () => {
 })
 document.querySelectorAll('[data-admin-close]').forEach((el) => el.addEventListener('click', closeAdminLogin))
 
-adminLoginForm?.addEventListener('submit', (e) => {
+adminLoginForm?.addEventListener('submit', async (e) => {
   e.preventDefault()
   const user = adminUsername.value.trim()
   const pass = adminPassword.value
-  if (user === 'cgvteam' && pass === '66668888') {
-    setAdminSession(user)
+  const submit = adminLoginForm.querySelector('[type="submit"]')
+  submit.disabled = true
+  adminLoginError.textContent = ''
+  try {
+    const response = await fetch(apiUrl('/admin-login'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass }) })
+    if (!response.ok) throw new Error('invalid')
+    const account = await response.json()
+    if (account.role !== 'admin') throw new Error('invalid')
+    setAdminSession(account.username || account.email)
     adminLoginForm.reset()
-    adminLoginError.textContent = ''
     location.href = '/admin-phim.html'
-  } else {
-    adminLoginError.textContent = 'Tài khoản hoặc mật khẩu chưa đúng.'
+  } catch {
+    adminLoginError.textContent = 'Tài khoản hoặc mật khẩu admin chưa đúng.'
     adminPassword.select()
+  } finally {
+    submit.disabled = false
   }
 })
 
