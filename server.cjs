@@ -158,6 +158,30 @@ app.get('/show-seats', (req, res) => {
   res.json({ seats: [...new Set(occupied)] })
 })
 
+// Chỉ trả số ghế và số khách theo phòng cho sơ đồ quản trị, không trả thông tin cá nhân.
+app.get('/room-occupancy', (_req, res) => {
+  const rooms = new Map()
+  for (const booking of ensureBookings().value()) {
+    if (['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus)) continue
+    const theaterId = String(booking.theaterId || '')
+    const room = String(booking.room || '01')
+    const key = `${theaterId}__${room}`
+    if (!rooms.has(key)) rooms.set(key, { theaterId, room, seats: new Set(), customers: new Set(), bookingCount: 0 })
+    const summary = rooms.get(key)
+    for (const seat of booking.seats || []) summary.seats.add(String(seat))
+    summary.customers.add(String(booking.userId || booking.userEmail || booking.code))
+    summary.bookingCount += 1
+  }
+  res.json([...rooms.values()].map((summary) => ({
+    theaterId: summary.theaterId,
+    room: summary.room,
+    seats: [...summary.seats],
+    seatCount: summary.seats.size,
+    customerCount: summary.customers.size,
+    bookingCount: summary.bookingCount,
+  })))
+})
+
 const requireUser = (req, res) => {
   const session = readTokenUser(req)
   if (!session) {
@@ -219,6 +243,7 @@ app.post('/my-bookings', (req, res) => {
     movie: String(payload.movie),
     theaterId: String(payload.theaterId || ''),
     theaterName: String(payload.theaterName || ''),
+    room: String(payload.room || '01'),
     date: String(payload.date || ''),
     time: String(payload.time || ''),
     seats: requestedSeats,

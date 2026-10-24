@@ -1,7 +1,7 @@
 import './quan-tri.css'
 import './quan-tri-toi.css'
 import './quan-ly-phong.css'
-import { apiRequest } from './shared/api.js'
+import { apiRequest, apiUrl } from './shared/api.js'
 import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { requireAdmin } from './shared/admin-auth.js'
 import { getSeatHolds, loadAdminBookings, loadSeatHolds } from './shared/booking-storage.js'
@@ -17,6 +17,7 @@ let theaters = []
 let rooms = []
 let bookings = []
 let holds = []
+let roomOccupancy = []
 let selectedRoomId = ''
 let editingId = ''
 
@@ -51,7 +52,16 @@ const activeBookings = () => bookings.filter((booking) => !['Đã hủy', 'Đã 
 const roomBookings = (room) => activeBookings().filter((booking) =>
   String(booking.theaterId) === String(room.theaterId) && String(booking.room || '01') === String(room.name),
 )
-const bookedSeats = (room) => new Set(roomBookings(room).flatMap((booking) => booking.seats || []).map(String))
+const savedRoomSummary = (room) => roomOccupancy.find((item) =>
+  String(item.theaterId) === String(room.theaterId) && String(item.room) === String(room.name),
+)
+const bookedSeats = (room) => new Set([
+  ...roomBookings(room).flatMap((booking) => booking.seats || []),
+  ...(savedRoomSummary(room)?.seats || []),
+].map(String))
+const roomCustomerCount = (room) => savedRoomSummary(room)?.customerCount ?? new Set(
+  roomBookings(room).map((booking) => booking.userId || booking.userEmail || booking.code),
+).size
 const roomHolds = (room) => room.name === '01'
   ? holds.filter((hold) => String(hold.key || '').split('__')[1] === String(room.theaterId))
   : []
@@ -73,10 +83,11 @@ function renderRooms() {
   const theaterId = $('#theaterFilter').value
   const visible = rooms.filter((room) => !theaterId || String(room.theaterId) === theaterId)
   $('#roomList').innerHTML = visible.length ? visible.map((room) => {
-    const count = bookedSeats(room).size
+    const count = savedRoomSummary(room)?.seatCount ?? bookedSeats(room).size
+    const customers = roomCustomerCount(room)
     const holding = [...heldSeats(room)].filter((seat) => !bookedSeats(room).has(seat)).length
     return `<article class="room-card ${room.id === selectedRoomId ? 'selected' : ''}" data-room="${esc(room.id)}">
-      <div class="room-card-mark">▦</div><div class="room-card-info"><strong>${esc(room.name)}</strong><span>${esc(theaterName(room.theaterId))}</span><small>${esc(room.type || '2D')} · ${count} ghế đã đặt · ${holding} ghế đang giữ</small></div>
+      <div class="room-card-mark">▦</div><div class="room-card-info"><strong>${esc(room.name)}</strong><span>${esc(theaterName(room.theaterId))}</span><small>${esc(room.type || '2D')} · ${count} ghế · ${customers} khách đã đặt · ${holding} đang giữ</small></div>
       <span class="badge ${room.status === 'active' ? 'showing' : 'archived'}">${room.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}</span>
       <div class="actions"><button class="icon-button" data-edit="${esc(room.id)}">Sửa</button><button class="icon-button delete" data-delete="${esc(room.id)}">Xóa</button></div>
     </article>`
@@ -96,7 +107,9 @@ function renderSeats() {
   for (const seat of occupied) holding.delete(seat)
   const rows = 'ABCDEFGH'.split('')
   $('#seatTitle').textContent = `Phòng ${room.name}`
-  $('#seatSub').textContent = `${theaterName(room.theaterId)} · ${room.type || '2D'} · ${occupied.size} ghế đã đặt · ${holding.size} ghế đang giữ chỗ`
+  const summary = savedRoomSummary(room)
+  const customerCount = roomCustomerCount(room)
+  $('#seatSub').textContent = `${theaterName(room.theaterId)} · ${room.type || '2D'} · ${summary?.seatCount ?? occupied.size} ghế đã đặt · ${customerCount} khách · ${holding.size} ghế đang giữ chỗ`
   $('#seatMap').innerHTML = rows.map((row) => `<div class="admin-seat-row"><span class="row-label">${row}</span>${Array.from({ length: 10 }, (_, index) => {
     const seat = `${row}${index + 1}`
     const isBooked = occupied.has(seat)
@@ -110,6 +123,17 @@ function render() {
   renderStats()
   renderRooms()
   renderSeats()
+}
+
+async function refreshRoomOccupancy() {
+  try {
+    const response = await fetch(apiUrl('/room-occupancy'))
+    if (response.ok) {
+      const result = await response.json()
+      if (Array.isArray(result)) roomOccupancy = result
+    }
+  } catch {}
+  render()
 }
 
 function openEditor(room = null) {
@@ -143,6 +167,7 @@ async function load() {
     }
     try { bookings = await loadAdminBookings() } catch { bookings = [] }
     holds = await loadSeatHolds()
+    await refreshRoomOccupancy()
     $('#theaterFilter').innerHTML = '<option value="">Tất cả rạp</option>' + theaters.map((theater) => `<option value="${esc(theater.id)}">${esc(theater.name)}</option>`).join('')
     if (!rooms.some((room) => room.id === selectedRoomId)) selectedRoomId = rooms[0]?.id || ''
     render()
@@ -198,7 +223,7 @@ window.addEventListener('storage', (event) => {
     holds = getSeatHolds()
     loadSeatHolds().then((value) => { holds = value; render() }).catch(() => {})
     loadAdminBookings().then((value) => { bookings = value; render() }).catch(render)
-    render()
+    refreshRoomOccupancy()
   }
 })
 window.addEventListener('cgv-seat-holds-change', () => {
@@ -213,4 +238,7 @@ setInterval(() => {
     })
   }
 }, 3000)
+setInterval(() => {
+  if (!document.hidden) refreshRoomOccupancy()
+}, 10000)
 load()
