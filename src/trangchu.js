@@ -481,7 +481,7 @@ const getMovieTimes = (movieTitle, theaterId, date) =>
   getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
 // Dựng thẻ vé sau khi đặt thành công, gồm mã vé và mã vạch SVG.
-const renderTicket = (booking) => {
+const renderTicket = (booking, syncWarning = '') => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
   const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
   const currentUser = getCachedUser()
@@ -492,6 +492,7 @@ const renderTicket = (booking) => {
       <span class="ticket-success-icon">✓</span>
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
       <h3>${booking.movie}</h3>
+      <p class="ticket-sync-warning" data-ticket-sync-warning hidden></p>
       <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
 
       <!-- Mã vạch quét tại quầy/kiosk -->
@@ -554,6 +555,12 @@ const renderTicket = (booking) => {
         <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.25);" data-close-ticket>HOÀN TẤT</button>
       </div>
     </div>`
+
+  const syncWarningEl = document.querySelector('[data-ticket-sync-warning]')
+  if (syncWarning && syncWarningEl) {
+    syncWarningEl.textContent = syncWarning
+    syncWarningEl.hidden = false
+  }
 
   const emailBtn = document.querySelector('#btnModalSendEmail')
   const emailInput = document.querySelector('#modalTicketEmailInput')
@@ -860,15 +867,9 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       const savedBooking = await createUserBooking(booking)
       renderTicket(savedBooking)
     } catch (error) {
-      storageSet('cgv_bookings_v1', bookings.filter((item) => item.code !== booking.code))
-      occupiedMap[key] = (occupiedMap[key] || []).filter((seat) => !seats.includes(seat))
-      storageSet('cgv_seat_state_v1', occupiedMap)
-      const alertBox = document.querySelector('#seatConflictAlert')
-      if (alertBox) {
-        alertBox.textContent = error.message || 'Ghế vừa được người khác đặt. Vui lòng chọn ghế khác.'
-        alertBox.hidden = false
-      }
-      openSeatSelection(m, theaterId, date, time)
+      // Payment is already confirmed in this flow. Keep the local ticket and
+      // barcode visible even when the shared API cannot sync the booking.
+      renderTicket(booking, `Vé đã tạo nhưng chưa đồng bộ lên hệ thống: ${error.message || 'Vui lòng thử lại sau.'}`)
     }
   })
 }
