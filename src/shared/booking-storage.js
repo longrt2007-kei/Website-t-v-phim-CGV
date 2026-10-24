@@ -241,6 +241,16 @@ export function getSeatHolds() {
 }
 
 export async function loadSeatHolds() {
+  try {
+    const response = await fetch(apiUrl('/seat-holds'))
+    if (response.ok) {
+      const holds = await response.json()
+      if (Array.isArray(holds)) {
+        saveSeatHolds(holds)
+        return holds
+      }
+    }
+  } catch {}
   return cleanExpiredHolds()
 }
 
@@ -269,6 +279,24 @@ export async function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_
   if (conflict) {
     return { success: false, conflictSeat: conflict, message: `Ghế ${conflict} vừa được khách khác giữ chỗ!` }
   }
+  try {
+    const response = await fetch(apiUrl('/seat-holds'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, seats, durationSeconds }),
+    })
+    const result = await response.json().catch(() => ({}))
+    if (response.status === 409) {
+      return { success: false, conflictSeat: result.conflictSeat, message: result.message || 'Ghế vừa được khách khác giữ chỗ hoặc đặt vé.' }
+    }
+    if (response.ok && result.id) {
+      saveSeatHolds([...cleanExpiredHolds(), result])
+      return { success: true, hold: result }
+    }
+    if (response.status !== 404) {
+      return { success: false, message: result.message || 'Không thể giữ ghế lúc này. Vui lòng thử lại.' }
+    }
+  } catch {}
   const now = Date.now()
   const hold = {
     id: `hold_${now}_${Math.random().toString(36).slice(2, 7)}`,
@@ -286,6 +314,9 @@ export async function createSeatHold(key, seats, durationSeconds = DEFAULT_HOLD_
 // Hủy lượt giữ để các khách khác có thể chọn những ghế đó.
 export async function releaseSeatHold(holdId) {
   if (!holdId) return
+  try {
+    await fetch(apiUrl(`/seat-holds/${encodeURIComponent(holdId)}`), { method: 'DELETE' })
+  } catch {}
   const holds = cleanExpiredHolds().filter((h) => h.id !== holdId)
   saveSeatHolds(holds)
 }

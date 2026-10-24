@@ -101,6 +101,52 @@ const ensureBookings = () => {
   return router.db.get('bookings')
 }
 
+const ensureSeatHolds = () => {
+  if (!Array.isArray(router.db.get('seatHolds').value())) router.db.set('seatHolds', []).write()
+  const now = Date.now()
+  const active = router.db.get('seatHolds').value().filter((hold) => Number(hold.expiresAt) > now)
+  if (active.length !== router.db.get('seatHolds').value().length) router.db.set('seatHolds', active).write()
+  return router.db.get('seatHolds')
+}
+
+app.get('/seat-holds', (req, res) => {
+  const holds = ensureSeatHolds().value()
+  const key = String(req.query.key || '')
+  res.json(key ? holds.filter((hold) => hold.key === key) : holds)
+})
+
+app.post('/seat-holds', (req, res) => {
+  const { key, seats, durationSeconds } = req.body || {}
+  if (!key || !Array.isArray(seats) || !seats.length) return res.status(400).json({ message: 'Thiếu thông tin ghế cần giữ.' })
+  const requestedSeats = [...new Set(seats.map(String))]
+  const holds = ensureSeatHolds()
+  const currentHold = holds.value().find((hold) => hold.key === String(key) && (hold.seats || []).some((seat) => requestedSeats.includes(String(seat))))
+  const [, theaterId, date, time] = String(key).split('__')
+  const booked = ensureBookings().value().find((booking) =>
+    String(booking.theaterId) === String(theaterId) && String(booking.date) === String(date) && String(booking.time) === String(time) &&
+    !['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus) && (booking.seats || []).some((seat) => requestedSeats.includes(String(seat))),
+  )
+  const conflictSeat = currentHold?.seats?.map(String).find((seat) => requestedSeats.includes(seat)) || booked?.seats?.map(String).find((seat) => requestedSeats.includes(seat))
+  if (conflictSeat) return res.status(409).json({ message: `Ghế ${conflictSeat} vừa được khách khác giữ chỗ hoặc đặt vé.`, conflictSeat })
+  const now = Date.now()
+  const duration = Math.min(900, Math.max(30, Number(durationSeconds) || 300))
+  const hold = {
+    id: `hold_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    key: String(key),
+    seats: requestedSeats,
+    createdAt: now,
+    expiresAt: now + duration * 1000,
+    durationSeconds: duration,
+  }
+  holds.push(hold).write()
+  res.status(201).json(hold)
+})
+
+app.delete('/seat-holds/:id', (req, res) => {
+  ensureSeatHolds().remove({ id: req.params.id }).write()
+  res.status(204).end()
+})
+
 // Ghế đã đặt được suy ra từ vé còn hiệu lực để mọi thiết bị dùng chung trạng thái.
 app.get('/show-seats', (req, res) => {
   const { movie, theaterId, date, time } = req.query

@@ -33,6 +33,7 @@ import {
   createSeatHold,
   releaseSeatHold,
   getHeldSeats,
+  loadSeatHolds,
   DEFAULT_HOLD_DURATION_SECONDS,
   createUserBooking,
 } from './shared/booking-storage.js'
@@ -627,6 +628,7 @@ const openSeatSelection = async (m, theaterId, date, time) => {
   const key = bookingKey(m.title, theaterId, date, time)
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
   let occupied = occupiedMap[key] || []
+  await loadSeatHolds()
   try {
     const params = new URLSearchParams({ movie: m.title, theaterId, date, time })
     const response = await fetch(apiUrl(`/show-seats?${params}`))
