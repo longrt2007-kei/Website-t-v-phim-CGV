@@ -132,3 +132,4 @@ label { color: #b9c3d0; }
   box-shadow: 0 18px 50px rgba(0, 0, 0, .4);
 }
 .footer { color: #69778c; }
+.seat-admin-legend{display:flex;gap:20px;padding:12px 24px;color:#aebbd0}.seat-admin-map{display:grid;gap:8px;padding:20px;overflow:auto}.seat-admin-screen{text-align:center;border-top:3px solid #e62a39;background:#101b2b;padding:8px;margin:0 auto 16px;width:min(80%,520px);color:#cbd5e1;font-size:11px;letter-spacing:.18em}.seat-admin-row{display:grid;grid-template-columns:24px repeat(10,34px);gap:7px;justify-content:center;align-items:center}.seat-admin-row>b{color:#93a0b3}.seat-admin-cell{display:grid;place-items:center;height:32px;border:1px solid #ffffff1c;background:#101b2b;border-radius:7px;color:#dbe3ee;font-size:11px}.seat-admin-cell.taken{background:#c72b2b;border-color:#c72b2b;color:white}

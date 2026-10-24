@@ -4,6 +4,7 @@ export function adminNav(active){
   const items=[
     ['movies','/admin-phim.html','▣','Quản lý phim'],
     ['theaters','/admin-rap.html','⌂','Quản lý rạp'],
+    ['rooms','/admin-phong.html','▦','Quản lý phòng & ghế'],
     ['showtimes','/admin-suat-chieu.html','◷','Quản lý suất chiếu'],
     ['tickets','/admin-ve.html','🎟','Quản lý vé']
   ]
