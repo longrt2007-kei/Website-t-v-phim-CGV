@@ -205,6 +205,12 @@ body {
   margin: 0 auto;
 }
 
+.ticket-barcode-item + .ticket-barcode-item { margin-top: 18px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+.ticket-barcode-label { margin-bottom: 8px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.ticket-barcode-item .cgv-barcode-svg { width: 100%; max-width: 440px; }
+.ticket-barcode-code { margin: 8px 0 0; color: #475569; font-size: 12px; }
+.ticket-barcode-code strong { color: #0f172a; }
+
 .barcode-note {
   font-size: 12.5px;
   color: #64748b;

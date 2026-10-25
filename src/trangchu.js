@@ -38,6 +38,7 @@ import {
   createUserBooking,
 } from './shared/booking-storage.js'
 import { generateBarcodeSvg } from './shared/barcode.js'
+import { createTicketCodes, getTicketEntries } from './shared/ticket-codes.js'
 
 const now = new Date()
 const today = now.toLocaleDateString('vi-VN', {
@@ -483,7 +484,7 @@ const getMovieTimes = (movieTitle, theaterId, date) =>
 // Dựng thẻ vé sau khi đặt thành công, gồm mã vé và mã vạch SVG.
 const renderTicket = (booking, syncWarning = '') => {
   const theater = theaters.find((t) => t.id === booking.theaterId)
-  const barcodeSvg = generateBarcodeSvg(booking.code, { height: 60, barWidth: 2, showText: true })
+  const ticketEntries = getTicketEntries(booking)
   const currentUser = getCachedUser()
   const initialEmail = booking.userEmail || currentUser?.email || ''
 
@@ -493,15 +494,17 @@ const renderTicket = (booking, syncWarning = '') => {
       <span class="detail-kicker">ĐẶT VÉ THÀNH CÔNG</span>
       <h3>${booking.movie}</h3>
       <p class="ticket-sync-warning" data-ticket-sync-warning hidden></p>
-      <p class="ticket-code">MÃ VÉ <strong>${booking.code}</strong></p>
+      <p class="ticket-code">MÃ ĐƠN ĐẶT <strong>${booking.code}</strong></p>
 
-      <!-- Mã vạch quét tại quầy/kiosk -->
-      <div style="background:#fff;border-radius:12px;padding:14px;margin:16px auto;max-width:380px;border:2px dashed #cbd5e1;text-align:center;">
-        <span style="display:block;font-size:11px;font-weight:800;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">MÃ VẠCH QUÉT TẠI QUẦY / KIOSK LẤY VÉ</span>
-        <div style="margin:0 auto;display:flex;justify-content:center;">
-          ${barcodeSvg}
-        </div>
-        <span style="display:block;font-size:11.5px;color:#64748b;margin-top:6px;">Đưa mã vạch này vào máy quét tại rạp để in vé cứng.</span>
+      <div style="display:grid;gap:12px;margin:16px auto;max-width:440px;">
+        ${ticketEntries.map(({ seat, code }, index) => `
+          <div style="background:#fff;border-radius:12px;padding:14px;border:2px dashed #cbd5e1;text-align:center;">
+            <span style="display:block;font-size:11px;font-weight:800;color:#64748b;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">MÃ VẠCH VÉ ${index + 1} · GHẾ ${seat}</span>
+            <div style="margin:0 auto;display:flex;justify-content:center;">
+              ${generateBarcodeSvg(code, { height: 60, barWidth: 2, showText: true })}
+            </div>
+            <span style="display:block;font-size:11.5px;color:#64748b;margin-top:6px;">Mã vé: ${code}</span>
+          </div>`).join('')}
       </div>
 
       <div class="ticket-grid">
@@ -843,6 +846,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     // Tạo dữ liệu vé sau khi xác nhận, lưu vé và đánh dấu ghế là đã đặt.
     const booking = {
       code,
+      ticketCodes: createTicketCodes(code, seats),
       userId: currentUser?.id || null,
       userName: currentUser?.name || '',
       userEmail: currentUser?.email || '',

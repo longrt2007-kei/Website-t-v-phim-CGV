@@ -266,6 +266,7 @@ app.post('/my-bookings', (req, res) => {
     date: String(payload.date || ''),
     time: String(payload.time || ''),
     seats: requestedSeats,
+    ticketCodes: requestedSeats.map((_, index) => String(payload.ticketCodes?.[index] || (index === 0 ? payload.code : `${payload.code}-${String(index + 1).padStart(2, '0')}`))),
     amount: Number(payload.amount || 0),
     paymentMethod: String(payload.paymentMethod || ''),
     paymentAccount: String(payload.paymentAccount || ''),

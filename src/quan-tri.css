@@ -254,6 +254,8 @@ td {
   max-width: 196px !important;
   height: auto !important;
 }
+.admin-ticket-barcode-item + .admin-ticket-barcode-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid #edf0f3; }
+.admin-ticket-barcode-item small { display: block; margin-bottom: 4px; color: #737985; }
 .movie-cell {
   display: flex;
   align-items: center;

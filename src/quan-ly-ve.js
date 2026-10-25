@@ -19,6 +19,7 @@ import {
 import { theaters } from './data/home-catalog.js'
 import { requireAdmin } from './shared/admin-auth.js'
 import { generateBarcodeSvg } from './shared/barcode.js'
+import { getTicketEntries } from './shared/ticket-codes.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
@@ -172,7 +173,7 @@ function render() {
           <td>
           <strong>${esc(t.code)}</strong>
           </td>
-          <td class="admin-ticket-barcode">${generateBarcodeSvg(t.code, { height: 42, barWidth: 1, showText: true })}</td>
+          <td class="admin-ticket-barcode">${getTicketEntries(t).map(({ seat, code }, index) => `<div class="admin-ticket-barcode-item"><small>Vé ${index + 1} · Ghế ${esc(seat)}</small>${generateBarcodeSvg(code, { height: 42, barWidth: 1, showText: true })}</div>`).join('')}</td>
           <td>
           <strong>${esc(t.movie)}</strong>
           </td>

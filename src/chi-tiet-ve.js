@@ -3,6 +3,7 @@ import './styles/ticket.css'
 import { generateBarcodeSvg } from './shared/barcode.js'
 import { getBookings, money, formatDateTime, loadUserBooking } from './shared/booking-storage.js'
 import { getCachedUser } from './shared/auth.js'
+import { getTicketEntries } from './shared/ticket-codes.js'
 
 async function initTicketPage() {
 // Đọc mã vé từ URL và tìm vé tương ứng trong localStorage.
@@ -44,7 +45,13 @@ if (!booking) {
 const currentUser = getCachedUser()
 const defaultEmail = booking.userEmail || currentUser?.email || ''
 // Mã vạch là SVG tạo tại chỗ; QR là ảnh do dịch vụ tạo QR bên ngoài cung cấp.
-const barcodeSvg = generateBarcodeSvg(booking.code, { height: 80, barWidth: 2, showText: true })
+const ticketEntries = getTicketEntries(booking)
+const barcodeCards = ticketEntries.map(({ seat, code }, index) => `
+  <div class="ticket-barcode-item">
+    <div class="ticket-barcode-label">Vé ${index + 1} · Ghế ${seat}</div>
+    ${generateBarcodeSvg(code, { height: 80, barWidth: 2, showText: true })}
+    <p class="ticket-barcode-code">Mã vé: <strong>${code}</strong></p>
+  </div>`).join('')
 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=8&data=${encodeURIComponent(
   `${window.location.origin}/chi-tiet-ve.html?code=${booking.code}`,
 )}`
@@ -69,9 +76,9 @@ function createTicketEmailHtml(b) {
         <div style="background:#f8fafc;border:2px dashed #cbd5e1;border-radius:10px;padding:20px;text-align:center;margin-bottom:24px;">
           <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">MÃ VẠCH QUÉT TẠI QUẦY / KIOSK</div>
           <div style="background:#ffffff;padding:12px;border-radius:8px;display:inline-block;max-width:100%;">
-            ${barcodeSvg}
+            ${barcodeCards}
           </div>
-          <p style="font-size:12px;color:#64748b;margin:10px 0 0;">Mã vé: <strong style="color:#0f172a;font-size:15px;">${b.code}</strong></p>
+          <p style="font-size:12px;color:#64748b;margin:10px 0 0;">Mã đơn đặt: <strong style="color:#0f172a;font-size:15px;">${b.code}</strong></p>
         </div>
 
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
@@ -157,7 +164,7 @@ app.innerHTML = `
         <span>MÃ VẠCH IN VÉ TỰ ĐỘNG TẠI QUẦY / KIOSK</span>
       </div>
       <div class="barcode-svg-container">
-        ${barcodeSvg}
+        ${barcodeCards}
       </div>
       <p class="barcode-note">
         Đưa mã vạch này vào máy quét tại <strong>Kiosk tự động</strong> hoặc quầy vé <strong>CGV</strong> để in vé cứng vào rạp.
@@ -293,6 +300,7 @@ emailForm?.addEventListener('submit', async (e) => {
 
     const emailBody = [
       `Vé CGV: ${booking.code}`,
+      ...ticketEntries.map(({ seat, code }, index) => `Vé ${index + 1} · Ghế ${seat} · Mã vé: ${code}`),
       `Phim: ${booking.movie}`,
       `Rạp: ${booking.theaterName || booking.theaterId}`,
       `Ngày / giờ: ${booking.date} ${booking.time}`,
