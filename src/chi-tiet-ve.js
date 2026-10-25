@@ -95,6 +95,10 @@ function createTicketEmailHtml(b) {
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;text-align:right;">${b.date} · ${b.time}</td>
           </tr>
           <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Phòng:</td>
+            <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;text-align:right;">Phòng ${Number(b.room || '01')}</td>
+          </tr>
+          <tr>
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Ghế ngồi:</td>
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#d71920;text-align:right;font-size:16px;">${(b.seats || []).join(', ')}</td>
           </tr>
@@ -150,7 +154,7 @@ app.innerHTML = `
         <div class="eticket-movie-tags">
           <span class="eticket-tag highlight">2D DIGITAL</span>
           <span class="eticket-tag">${booking.theaterName}</span>
-          <span class="eticket-tag">Phòng chiếu Standard</span>
+          <span class="eticket-tag">Phòng ${Number(booking.room || '01')}</span>
         </div>
       </div>
       <div class="eticket-qr-box" title="Quét mã QR để kiểm tra vé">
@@ -184,6 +188,10 @@ app.innerHTML = `
       <div class="eticket-field">
         <span>Suất chiếu</span>
         <strong>${booking.time}</strong>
+      </div>
+      <div class="eticket-field">
+        <span>Phòng chiếu</span>
+        <strong>Phòng ${Number(booking.room || '01')}</strong>
       </div>
       <div class="eticket-field">
         <span>Ghế ngồi</span>

@@ -3266,6 +3266,25 @@ body {
   color: #171515;
   font: inherit;
 }
+.seat-room-select {
+  display: grid;
+  gap: 7px;
+  max-width: 320px;
+  margin: 2px 0 16px;
+  color: #756c66;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.seat-room-select select {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #ded7ce;
+  border-radius: 10px;
+  background: #fff;
+  color: #171515;
+  font: inherit;
+}
 .seat-flow-head,
 .ticket-list-head {
   padding: 26px 28px 14px;
@@ -3738,12 +3757,18 @@ body::before {
   color: #eef2f7 !important;
 }
 .booking-selects label,
+.seat-room-select,
 .seat-flow-head p,
 .ticket-list-head p,
 .detail-source {
   color: #93a0b3 !important;
 }
 .booking-selects select {
+  background: #0d1727 !important;
+  color: #fff !important;
+  border-color: #ffffff1a !important;
+}
+.seat-room-select select {
   background: #0d1727 !important;
   color: #fff !important;
   border-color: #ffffff1a !important;

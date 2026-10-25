@@ -63,9 +63,10 @@ const bookedSeats = (room) => new Set([
 const roomCustomerCount = (room) => savedRoomSummary(room)?.customerCount ?? new Set(
   roomBookings(room).map((booking) => booking.userId || booking.userEmail || booking.code),
 ).size
-const roomHolds = (room) => room.name === '01'
-  ? holds.filter((hold) => String(hold.key || '').split('__')[1] === String(room.theaterId))
-  : []
+const roomHolds = (room) => holds.filter((hold) => {
+  const parts = String(hold.key || '').split('__')
+  return String(parts[1]) === String(room.theaterId) && String(parts[4] || '01') === String(room.name)
+})
 const heldSeats = (room) => new Set(roomHolds(room).flatMap((hold) => hold.seats || []).map(String))
 
 function renderStats() {

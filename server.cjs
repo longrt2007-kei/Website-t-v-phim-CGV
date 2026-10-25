@@ -121,9 +121,9 @@ app.post('/seat-holds', (req, res) => {
   const requestedSeats = [...new Set(seats.map(String))]
   const holds = ensureSeatHolds()
   const currentHold = holds.value().find((hold) => hold.key === String(key) && (hold.seats || []).some((seat) => requestedSeats.includes(String(seat))))
-  const [, theaterId, date, time] = String(key).split('__')
+  const [movie, theaterId, date, time, room = '01'] = String(key).split('__')
   const booked = ensureBookings().value().find((booking) =>
-    String(booking.theaterId) === String(theaterId) && String(booking.date) === String(date) && String(booking.time) === String(time) &&
+    String(booking.movie) === String(movie) && String(booking.theaterId) === String(theaterId) && String(booking.date) === String(date) && String(booking.time) === String(time) && String(booking.room || '01') === String(room) &&
     !['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus) && (booking.seats || []).some((seat) => requestedSeats.includes(String(seat))),
   )
   const conflictSeat = currentHold?.seats?.map(String).find((seat) => requestedSeats.includes(seat)) || booked?.seats?.map(String).find((seat) => requestedSeats.includes(seat))
@@ -149,11 +149,11 @@ app.delete('/seat-holds/:id', (req, res) => {
 
 // Ghế đã đặt được suy ra từ vé còn hiệu lực để mọi thiết bị dùng chung trạng thái.
 app.get('/show-seats', (req, res) => {
-  const { movie, theaterId, date, time } = req.query
+  const { movie, theaterId, date, time, room = '01' } = req.query
   if (!movie || !theaterId || !date || !time) return res.status(400).json({ message: 'Thiếu thông tin suất chiếu.' })
   const key = `${movie}__${theaterId}__${date}__${time}`
   const occupied = ensureBookings().value()
-    .filter((booking) => `${booking.movie}__${booking.theaterId}__${booking.date}__${booking.time}` === key && booking.paymentStatus !== 'Đã hủy' && booking.paymentStatus !== 'Đã hoàn tiền')
+    .filter((booking) => `${booking.movie}__${booking.theaterId}__${booking.date}__${booking.time}` === key && String(booking.room || '01') === String(room) && booking.paymentStatus !== 'Đã hủy' && booking.paymentStatus !== 'Đã hoàn tiền')
     .flatMap((booking) => booking.seats || [])
   res.json({ seats: [...new Set(occupied)] })
 })
@@ -249,7 +249,7 @@ app.post('/my-bookings', (req, res) => {
   if (existing) return res.status(409).json({ message: 'Mã vé đã tồn tại.' })
   const requestedSeats = payload.seats.map(String)
   const conflict = collection.value().find((booking) =>
-    booking.movie === String(payload.movie) && booking.theaterId === String(payload.theaterId || '') &&
+    booking.movie === String(payload.movie) && booking.theaterId === String(payload.theaterId || '') && String(booking.room || '01') === String(payload.room || '01') &&
     booking.date === String(payload.date || '') && booking.time === String(payload.time || '') &&
     booking.paymentStatus !== 'Đã hủy' && booking.paymentStatus !== 'Đã hoàn tiền' &&
     (booking.seats || []).some((seat) => requestedSeats.includes(String(seat))),
@@ -314,7 +314,7 @@ app.patch('/admin/bookings/:code', (req, res) => {
       return res.status(400).json({ message: 'Mã ghế không hợp lệ.' })
     }
     const conflict = collection.value().find((booking) =>
-      booking.code !== current.code && booking.movie === current.movie && booking.theaterId === current.theaterId &&
+      booking.code !== current.code && booking.movie === current.movie && booking.theaterId === current.theaterId && String(booking.room || '01') === String(current.room || '01') &&
       booking.date === current.date && booking.time === current.time &&
       !['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus) &&
       (booking.seats || []).some((seat) => seats.includes(String(seat))),
@@ -323,7 +323,7 @@ app.patch('/admin/bookings/:code', (req, res) => {
       const seat = conflict.seats.map(String).find((value) => seats.includes(value))
       return res.status(409).json({ message: `Ghế ${seat} đã có vé khác.` })
     }
-    const key = `${current.movie}__${current.theaterId}__${current.date}__${current.time}`
+    const key = `${current.movie}__${current.theaterId}__${current.date}__${current.time}__${String(current.room || '01')}`
     const holdConflict = ensureSeatHolds().value().find((hold) => hold.key === key && (hold.seats || []).some((seat) => seats.includes(String(seat))))
     if (holdConflict) {
       const seat = holdConflict.seats.map(String).find((value) => seats.includes(value))

@@ -216,15 +216,23 @@ export function saveSeatMap(map) {
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(map))
 }
 export function bookingKey(b) {
-  return `${b.movie}__${b.theaterId}__${b.date}__${b.time}`
+  return `${b.movie}__${b.theaterId}__${b.date}__${b.time}__${String(b.room || '01')}`
 }
 // Mở lại các ghế thuộc vé khi vé bị xóa.
 export function releaseBookingSeats(booking) {
-  const map = getSeatMap(),
-    key = bookingKey(booking)
-  if (map[key]) {
-    map[key] = map[key].filter((seat) => !booking.seats.includes(seat))
+  const map = getSeatMap()
+  const keys = [bookingKey(booking)]
+  if (String(booking.room || '01') === '01') {
+    keys.push(`${booking.movie}__${booking.theaterId}__${booking.date}__${booking.time}`)
+  }
+  let changed = false
+  for (const key of keys) {
+    if (!map[key]) continue
+    map[key] = map[key].filter((seat) => !(booking.seats || []).includes(seat))
     if (!map[key].length) delete map[key]
+    changed = true
+  }
+  if (changed) {
     saveSeatMap(map)
   }
 }

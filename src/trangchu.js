@@ -521,6 +521,10 @@ const renderTicket = (booking, syncWarning = '') => {
           <strong>${booking.time}</strong>
         </div>
         <div>
+          <span>Phòng</span>
+          <strong>Phòng ${Number(booking.room || '01')}</strong>
+        </div>
+        <div>
           <span>Ghế</span>
           <strong>${booking.seats.join(', ')}</strong>
         </div>
@@ -610,7 +614,7 @@ const clearHoldTimer = () => {
 }
 
 // Thông báo khi thời gian giữ ghế hết và cho phép người dùng chọn lại.
-const renderHoldExpired = (m, theaterId, date, time, seats) => {
+const renderHoldExpired = (m, theaterId, date, time, room, seats) => {
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-hold-expired-box">
       <div class="seat-hold-expired-icon">⏰</div>
@@ -624,32 +628,37 @@ const renderHoldExpired = (m, theaterId, date, time, seats) => {
       </div>
     </div>`
   document.querySelector('#btnReSelectSeat')?.addEventListener('click', () => {
-    openSeatSelection(m, theaterId, date, time)
+    openSeatSelection(m, theaterId, date, time, room)
   })
 }
 
 // Mở sơ đồ ghế, đánh dấu ghế trống/đang giữ/đã đặt và xử lý chọn ghế.
-const openSeatSelection = async (m, theaterId, date, time) => {
+const openSeatSelection = async (m, theaterId, date, time, room = '01') => {
   clearHoldTimer()
   if (currentHoldId) {
     releaseSeatHold(currentHoldId)
     currentHoldId = null
   }
-  const key = bookingKey(m.title, theaterId, date, time)
+  const key = bookingKey({ movie: m.title, theaterId, date, time, room })
+  const legacyKey = `${m.title}__${theaterId}__${date}__${time}`
   const occupiedMap = storageGet('cgv_seat_state_v1', {})
-  let occupied = occupiedMap[key] || []
+  let occupied = occupiedMap[key] || (room === '01' ? occupiedMap[legacyKey] : []) || []
   await loadSeatHolds()
   try {
-    const params = new URLSearchParams({ movie: m.title, theaterId, date, time })
+    const params = new URLSearchParams({ movie: m.title, theaterId, date, time, room })
     const response = await fetch(apiUrl(`/show-seats?${params}`))
     if (response.ok) {
       const result = await response.json()
       occupied = [...new Set(result.seats || [])]
     }
   } catch {}
-  const heldSeats = getHeldSeats(key)
+  const heldSeats = [...new Set([...getHeldSeats(key), ...(room === '01' ? getHeldSeats(legacyKey) : [])])]
   const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
   const theater = theaters.find((t) => t.id === theaterId)
+  const roomOptions = Array.from({ length: Math.max(1, Number(theater?.screens) || 1) }, (_, index) => {
+    const value = String(index + 1).padStart(2, '0')
+    return `<option value="${value}" ${value === room ? 'selected' : ''}>Phòng ${index + 1}</option>`
+  }).join('')
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-flow-head">
       <span class="detail-kicker">BƯỚC 2 / 3 · CHỌN GHẾ</span>
@@ -657,6 +666,9 @@ const openSeatSelection = async (m, theaterId, date, time) => {
       <p>${theater?.name || ''} · ${date} · ${time}</p>
     </div>
     <div class="seat-flow-body">
+      <label class="seat-room-select">Phòng chiếu
+        <select id="seatRoomSelect">${roomOptions}</select>
+      </label>
       <div id="seatConflictAlert" class="seat-conflict-alert" hidden></div>
       <div class="screen-label">MÀN HÌNH</div>
       <div class="seat-map">
@@ -700,6 +712,9 @@ const openSeatSelection = async (m, theaterId, date, time) => {
       </div>
       <button type="button" class="btn btn-primary" id="confirmSeatBtn" disabled>XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)</button>
     </div>`
+  document.querySelector('#seatRoomSelect').addEventListener('change', (event) => {
+    openSeatSelection(m, theaterId, date, time, event.currentTarget.value)
+  })
   const selected = new Set()
   document.querySelectorAll('#modalContent .seat:not(.occupied):not(.holding)').forEach((btn) =>
     btn.addEventListener('click', () => {
@@ -727,7 +742,7 @@ const openSeatSelection = async (m, theaterId, date, time) => {
         alertBox.hidden = false
       }
       if (/khách khác giữ chỗ/i.test(holdRes.message || '')) {
-        setTimeout(() => openSeatSelection(m, theaterId, date, time), 1200)
+        setTimeout(() => openSeatSelection(m, theaterId, date, time, room), 1200)
       } else {
         button.disabled = false
         button.textContent = 'XÁC NHẬN GIỮ CHỖ &amp; TIẾP TỤC (5 PHÚT)'
@@ -735,12 +750,12 @@ const openSeatSelection = async (m, theaterId, date, time) => {
       return
     }
     currentHoldId = holdRes.hold.id
-    openPayment(m, theaterId, date, time, seats, occupiedMap, occupied, key, holdRes.hold)
+    openPayment(m, theaterId, date, time, room, seats, occupiedMap, occupied, key, holdRes.hold)
   })
 }
 
 // Hiển thị bước thanh toán mô phỏng, bộ đếm thời gian và nút xác nhận vé.
-const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key, hold) => {
+const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupied, key, hold) => {
   clearHoldTimer()
   const theater = theaters.find((t) => t.id === theaterId)
   const amount = seats.length * ticketPrice
@@ -750,7 +765,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     <div class="seat-flow-head payment-head">
       <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN &amp; GIỮ CHỖ</span>
       <h3>Quét QR để thanh toán</h3>
-      <p>${m.title} · ${theater?.name || ''} · ${date} · ${time}</p>
+      <p>${m.title} · ${theater?.name || ''} · Phòng ${Number(room)} · ${date} · ${time}</p>
     </div>
     <div class="seat-hold-banner" id="seatHoldBanner">
       <div class="seat-hold-top">
@@ -821,7 +836,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       clearHoldTimer()
       if (hold?.id) releaseSeatHold(hold.id)
       currentHoldId = null
-      renderHoldExpired(m, theaterId, date, time, seats)
+      renderHoldExpired(m, theaterId, date, time, room, seats)
     }
   }
 
@@ -832,7 +847,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
     clearHoldTimer()
     if (hold?.id) releaseSeatHold(hold.id)
     currentHoldId = null
-    openSeatSelection(m, theaterId, date, time)
+    openSeatSelection(m, theaterId, date, time, room)
   })
 
   document.querySelector('#paymentConfirmBtn').addEventListener('click', async (event) => {
@@ -853,7 +868,7 @@ const openPayment = (m, theaterId, date, time, seats, occupiedMap, occupied, key
       movie: m.title,
       theaterId,
       theaterName: theater?.name || theaterId,
-      room: '01',
+      room,
       date,
       time,
       seats,
