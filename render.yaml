@@ -1,3 +1,4 @@
+# Cấu hình Render để triển khai riêng API lưu tài khoản và vé.
 services:
   - type: web
     name: cgv-cinemas-api
@@ -7,5 +8,6 @@ services:
     startCommand: npm run api
     healthCheckPath: /movies
     envVars:
+      # Render tự tạo khóa ký JWT cho môi trường triển khai.
       - key: JWT_SECRET
         generateValue: true

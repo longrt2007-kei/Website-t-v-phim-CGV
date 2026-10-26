@@ -5,6 +5,7 @@ import { getBookings, money, formatDateTime, loadUserBooking } from './shared/bo
 import { getCachedUser } from './shared/auth.js'
 import { getTicketEntries } from './shared/ticket-codes.js'
 
+// Tìm vé theo mã trên URL rồi dựng nội dung vé điện tử.
 async function initTicketPage() {
 // Đọc mã vé từ URL và tìm vé tương ứng trong localStorage.
 const app = document.querySelector('#app')
@@ -56,10 +57,7 @@ const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&marg
   `${window.location.origin}/chi-tiet-ve.html?code=${booking.code}`,
 )}`
 
-/**
- * Tạo nội dung HTML thư xác nhận gửi về email
- */
-// Tạo HTML thư xác nhận để hiển thị trong cửa sổ xem trước.
+// Tạo nội dung HTML được hiển thị trong phần xem trước email vé.
 function createTicketEmailHtml(b) {
   return `
     <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;color:#1e293b;">

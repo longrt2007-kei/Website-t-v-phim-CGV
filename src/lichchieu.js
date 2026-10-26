@@ -1,3 +1,4 @@
+// Trang lịch chiếu: chọn rạp/ngày và xem các phim cùng giờ chiếu tương ứng.
 import { mountUserNav } from './shared/user-nav.js'
 import './pages.css'
 import { apiUrl } from './shared/api.js'
@@ -59,9 +60,11 @@ app.innerHTML = `<header class="simple-header">
   </main>`
 mountUserNav()
 const $ = (s) => document.querySelector(s)
+// Tạo số ổn định từ tên phim để chọn bộ giờ mẫu nhất quán.
 function hash(s) {
   return [...s].reduce((a, c) => a + c.charCodeAt(0), 0)
 }
+// Vẽ lịch chiếu theo rạp và ngày đang được chọn.
 function render() {
   const ti = theaters.findIndex((x) => x[0] === $('#theater').value),
     di = days.findIndex((x) => x[0] === $('#day').value)
@@ -83,6 +86,7 @@ function render() {
         .join('')
     : `<div class="empty-page">Chưa có phim đang chiếu.</div>`
 }
+// Nạp danh sách phim từ cache hoặc API rồi dựng lịch.
 async function load() {
   const cached = localStorage.getItem('cgv_movie_cache_v2')
   if (cached) {
@@ -101,6 +105,7 @@ async function load() {
   } catch {}
   render()
 }
+// Khi đổi rạp hoặc ngày, cập nhật ngay danh sách suất chiếu.
 $('#theater').addEventListener('change', render)
 $('#day').addEventListener('change', render)
 load()

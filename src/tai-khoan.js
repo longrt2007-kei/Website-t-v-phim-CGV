@@ -1,8 +1,10 @@
+// Trang hồ sơ khách: thông tin tài khoản, thông báo vé và nút đăng xuất.
 import './auth-pages.css'
 import { getCachedUser, logoutUser, refreshCurrentUser, requireAuth } from './shared/auth.js'
 import { loadUserNotifications, markUserNotificationsRead } from './shared/booking-storage.js'
 
 if (requireAuth()) init()
+// Lấy hồ sơ và thông báo của tài khoản rồi dựng giao diện trang thành viên.
 async function init() {
   const app = document.querySelector('#app')
   let user = getCachedUser()
@@ -72,6 +74,7 @@ async function init() {
     location.reload()
   })
 }
+// Mã hóa chuỗi trước khi chèn dữ liệu tài khoản vào HTML.
 function escapeHtml(s) {
   return String(s ?? '').replace(
     /[&<>"']/g,

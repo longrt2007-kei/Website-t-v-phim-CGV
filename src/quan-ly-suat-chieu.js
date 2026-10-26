@@ -4,6 +4,7 @@ import { apiRequest } from './shared/api.js'
 import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { requireAdmin } from './shared/admin-auth.js'
 if (!requireAdmin()) throw new Error('Admin authentication required')
+// Trang quản lý suất chiếu: gắn phim/rạp/phòng với ngày, giờ và giá vé.
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? '').replace(
@@ -106,8 +107,10 @@ $('#app').innerHTML =
     </div>
     </form>
     </dialog>`
+// Tra tên phim và rạp từ mã lưu trong suất chiếu.
 const movieName = (id) => movies.find((x) => String(x.id) === String(id))?.title || id,
   theaterName = (id) => theaters.find((x) => String(x.id) === String(id))?.name || id
+// Lọc suất theo từ khóa và ngày chiếu.
 function filtered() {
   const q = $('#search').value.toLowerCase(),
     d = $('#date').value
@@ -122,6 +125,7 @@ function filtered() {
     )
     .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
 }
+// Vẽ thống kê và bảng suất chiếu sau khi áp dụng bộ lọc.
 function render() {
   const f = filtered()
   $('#count').textContent = `(${rows.length})`
@@ -166,6 +170,7 @@ function render() {
     )
     .join('')
 }
+// Tải suất chiếu, phim và rạp để điền bảng cùng lựa chọn trong biểu mẫu.
 async function load() {
   try {
     ;[rows, movies, theaters] = await Promise.all([
@@ -185,6 +190,7 @@ async function load() {
     $('#error').textContent = 'Không kết nối được API. Hãy chạy npm run dev.'
   }
 }
+// Mở biểu mẫu thêm suất hoặc sửa suất đã chọn.
 function open(x) {
   editing = x || null
   $('#form').reset()

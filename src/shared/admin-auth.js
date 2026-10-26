@@ -1,3 +1,4 @@
+// Quản lý đăng nhập admin: ưu tiên phiên API, có chế độ demo lưu cục bộ.
 import { apiUrl } from './api.js'
 
 const ADMIN_USERNAME = 'cgvteam'
@@ -6,10 +7,12 @@ const ADMIN_SESSION_KEY = 'cgv_admin_session_v1'
 const ADMIN_USER_KEY = 'cgv_admin_user_v1'
 const ADMIN_LOCAL_ONLY_KEY = 'cgv_admin_local_only_v1'
 
+// Lấy token admin để gửi các yêu cầu quản trị cần xác thực.
 export function getAdminToken() {
   return isAdminAuthenticated() ? localStorage.getItem('cgv_admin_token_v1') || '' : ''
 }
 
+// Lấy hồ sơ admin đang đăng nhập từ localStorage.
 export function getAdminUser() {
   try {
     return JSON.parse(localStorage.getItem(ADMIN_USER_KEY) || 'null')
@@ -18,6 +21,7 @@ export function getAdminUser() {
   }
 }
 
+// Xóa token, hồ sơ và cờ phiên admin khỏi trình duyệt.
 export function clearAdminSession() {
   localStorage.removeItem(ADMIN_SESSION_KEY)
   localStorage.removeItem(ADMIN_USER_KEY)
@@ -25,10 +29,12 @@ export function clearAdminSession() {
   localStorage.removeItem(ADMIN_LOCAL_ONLY_KEY)
 }
 
+// Kiểm tra cờ phiên admin còn được lưu hay không.
 export function isAdminAuthenticated() {
   return localStorage.getItem(ADMIN_SESSION_KEY) === 'signed-in'
 }
 
+// Thử đăng nhập qua API; nếu API thiếu endpoint demo thì dùng tài khoản demo cục bộ.
 export async function loginAdmin(username, password) {
   clearAdminSession()
   const cleanUsername = String(username).trim().toLowerCase()
@@ -65,6 +71,7 @@ export async function loginAdmin(username, password) {
   return getAdminUser()
 }
 
+// Chỉ cho vào trang quản trị khi có phiên API hoặc phiên demo hợp lệ.
 export function requireAdmin() {
   if (isAdminAuthenticated()) {
     const hasApiSession = Boolean(localStorage.getItem('cgv_admin_token_v1'))
@@ -77,6 +84,7 @@ export function requireAdmin() {
   return false
 }
 
+// Chọn trang quản trị cần mở sau khi đăng nhập.
 export function adminReturnUrl() {
   const target = new URLSearchParams(location.search).get('return')
   return target?.startsWith('/quan-ly-') ? target : '/quan-ly-phim.html'

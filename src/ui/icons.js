@@ -1,3 +1,4 @@
+// Bộ biểu tượng SVG dùng chung trong thanh điều hướng và các nút giao diện.
 export const icons = {
   search:
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',

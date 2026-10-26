@@ -1,3 +1,4 @@
+// Trang thư viện phim: tìm kiếm/lọc phim và lưu danh sách yêu thích.
 import { mountUserNav } from './shared/user-nav.js'
 import './pages.css'
 import { apiUrl } from './shared/api.js'
@@ -45,9 +46,11 @@ app.innerHTML = `<header class="simple-header">
   </main>`
 mountUserNav()
 const $ = (s) => document.querySelector(s)
+// Lưu các mã phim yêu thích vào bộ nhớ của trình duyệt.
 function saveFav() {
   localStorage.setItem('cgv_favorites_v1', JSON.stringify([...favorites]))
 }
+// Lọc danh sách theo từ khóa, trạng thái và thể loại rồi dựng các thẻ phim.
 function render() {
   const q = $('#q').value.trim().toLowerCase(),
     st = $('#status').value,
@@ -91,6 +94,7 @@ function render() {
         .join('')
     : `<div class="empty-page">Không tìm thấy phim phù hợp.</div>`
 }
+// Nạp phim từ cache trước, sau đó thử lấy dữ liệu mới từ API.
 async function load() {
   const cached = localStorage.getItem('cgv_movie_cache_v2')
   if (cached) {
@@ -114,6 +118,7 @@ async function load() {
     if (!movies.length) render()
   }
 }
+// Cập nhật lựa chọn thể loại dựa trên dữ liệu phim đang có.
 function hydrateFilters() {
   const current = $('#genre').value
   const genres = [...new Set(movies.map((m) => m.genre).filter(Boolean))].sort()
@@ -124,6 +129,7 @@ function hydrateFilters() {
 $('#q').addEventListener('input', render)
 $('#status').addEventListener('change', render)
 $('#genre').addEventListener('change', render)
+// Bật/tắt yêu thích khi khách bấm nút trên một thẻ phim.
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-fav]')
   if (!b) return

@@ -1,3 +1,4 @@
+/* Kiểu riêng cho bảng vé và thao tác chỉnh sửa ghế. */
 .ticket-seats-cell { display: grid; gap: 7px; min-width: 115px; }
 .ticket-seats-cell strong { overflow-wrap: anywhere; }
 .ticket-seats-cell .icon-button { justify-self: start; }

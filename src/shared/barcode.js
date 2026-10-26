@@ -1,7 +1,4 @@
-/**
- * Code 128-B Barcode Generator (SVG)
- * Tạo mã vạch chuẩn cho vé xem phim CGV để quét tại quầy hoặc máy Kiosk tự động.
- */
+// Tạo mã vạch SVG chuẩn Code 128-B để quét vé tại quầy hoặc máy kiosk.
 
 // Mỗi chuỗi số mô tả độ rộng luân phiên của vạch đen và khoảng trắng.
 // Bảng mẫu mã hóa Code 128 (độ rộng 6 vạch: đen, trắng, đen, trắng, đen, trắng)
@@ -23,10 +20,7 @@ const CODE128_PATTERNS = [
 const START_CODE_B = 104
 const STOP_CODE = 106
 
-/**
- * Mã hóa chuỗi ký tự sang danh sách các mã giá trị Code 128
- */
-// Chuyển từng ký tự thành giá trị Code 128-B và tính checksum kiểm tra.
+// Mã hóa từng ký tự thành giá trị Code 128-B và tính checksum kiểm tra.
 function encodeStringToCode128(text) {
   const codes = [START_CODE_B]
   let checksum = START_CODE_B
@@ -45,9 +39,9 @@ function encodeStringToCode128(text) {
 }
 
 /**
- * Tạo SVG Mã vạch Code 128
- * @param {string} text - Mã vé cần tạo barcode (ví dụ 'CGV12345678')
- * @param {object} options - Tùy chỉnh chiều cao, độ rộng, hiển thị chữ
+ * Tạo SVG mã vạch Code 128 từ mã vé.
+ * @param {string} text - Mã vé cần tạo mã vạch, ví dụ 'CGV12345678'.
+ * @param {object} options - Tùy chọn chiều cao, độ rộng vạch và chữ hiển thị.
  */
 // Tạo SVG mã vạch từ mã vé để nhúng trực tiếp vào trang HTML.
 export function generateBarcodeSvg(text, options = {}) {

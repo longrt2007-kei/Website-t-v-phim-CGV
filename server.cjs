@@ -1,3 +1,4 @@
+// Máy chủ JSON Server: xác thực khách, lưu vé và chia sẻ trạng thái giữ ghế.
 const jsonServer = require('json-server')
 const auth = require('json-server-auth')
 const bcrypt = require('bcryptjs')
@@ -6,8 +7,7 @@ const { JWT_SECRET_KEY } = require('json-server-auth/dist/constants')
 const fs = require('fs')
 const path = require('path')
 
-// Load the admin password from the local, git-ignored .env file when no
-// ADMIN_PASSWORD environment variable was provided by the host.
+// Đọc mật khẩu admin từ .env nếu máy chủ chưa được cấu hình biến môi trường.
 if (!process.env.ADMIN_PASSWORD) {
   const envPath = path.join(__dirname, '.env')
   if (fs.existsSync(envPath)) {
@@ -80,10 +80,12 @@ app.db = router.db
 app.use(middlewares)
 app.use(jsonServer.bodyParser)
 
+// Endpoint kiểm tra nhanh API có đang hoạt động hay không.
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', apiVersion: 'shared-bookings-v1' })
 })
 
+// Kiểm tra Bearer token và tìm tài khoản tương ứng trong cơ sở dữ liệu.
 const readTokenUser = (req) => {
   const [scheme, token] = String(req.headers.authorization || '').split(' ')
   if (scheme !== 'Bearer' || !token) return null
@@ -96,11 +98,13 @@ const readTokenUser = (req) => {
   }
 }
 
+// Đảm bảo collection vé tồn tại trước khi đọc/ghi.
 const ensureBookings = () => {
   if (!Array.isArray(router.db.get('bookings').value())) router.db.set('bookings', []).write()
   return router.db.get('bookings')
 }
 
+// Đảm bảo collection giữ ghế tồn tại và loại lượt giữ đã hết hạn.
 const ensureSeatHolds = () => {
   if (!Array.isArray(router.db.get('seatHolds').value())) router.db.set('seatHolds', []).write()
   const now = Date.now()
@@ -109,12 +113,14 @@ const ensureSeatHolds = () => {
   return router.db.get('seatHolds')
 }
 
+// Trả danh sách ghế đang giữ, có thể lọc theo suất chiếu.
 app.get('/seat-holds', (req, res) => {
   const holds = ensureSeatHolds().value()
   const key = String(req.query.key || '')
   res.json(key ? holds.filter((hold) => hold.key === key) : holds)
 })
 
+// Giữ ghế tạm thời; từ chối nếu ghế đã có người giữ hoặc đặt.
 app.post('/seat-holds', (req, res) => {
   const { key, seats, durationSeconds } = req.body || {}
   if (!key || !Array.isArray(seats) || !seats.length) return res.status(400).json({ message: 'Thiếu thông tin ghế cần giữ.' })
@@ -142,12 +148,13 @@ app.post('/seat-holds', (req, res) => {
   res.status(201).json(hold)
 })
 
+// Giải phóng một lượt giữ ghế theo mã.
 app.delete('/seat-holds/:id', (req, res) => {
   ensureSeatHolds().remove({ id: req.params.id }).write()
   res.status(204).end()
 })
 
-// Ghế đã đặt được suy ra từ vé còn hiệu lực để mọi thiết bị dùng chung trạng thái.
+// Trả các ghế đã đặt trong suất/phòng để giao diện đánh dấu không khả dụng.
 app.get('/show-seats', (req, res) => {
   const { movie, theaterId, date, time, room = '01' } = req.query
   if (!movie || !theaterId || !date || !time) return res.status(400).json({ message: 'Thiếu thông tin suất chiếu.' })
@@ -182,6 +189,7 @@ app.get('/room-occupancy', (_req, res) => {
   })))
 })
 
+// Từ chối yêu cầu nếu token khách thiếu, sai hoặc hết hạn.
 const requireUser = (req, res) => {
   const session = readTokenUser(req)
   if (!session) {
@@ -191,6 +199,7 @@ const requireUser = (req, res) => {
   return session
 }
 
+// Kiểm tra phiên hợp lệ và quyền admin trước khi thao tác quản trị.
 const requireAdminUser = (req, res) => {
   const session = requireUser(req, res)
   if (!session) return null
@@ -201,6 +210,7 @@ const requireAdminUser = (req, res) => {
   return session
 }
 
+// Đăng nhập admin demo và tạo JWT cho API quản trị.
 app.post('/admin-demo-login', (req, res) => {
   const username = String(req.body?.username || '').trim().toLowerCase()
   const password = String(req.body?.password || '')
@@ -220,6 +230,7 @@ app.post('/admin-demo-login', (req, res) => {
   })
 })
 
+// Trả vé thuộc đúng tài khoản đang đăng nhập.
 app.get('/my-bookings', (req, res) => {
   const session = requireUser(req, res)
   if (!session) return
@@ -227,6 +238,7 @@ app.get('/my-bookings', (req, res) => {
   res.json(ensureBookings().filter((booking) => String(booking.userId) === ownerId).value())
 })
 
+// Tra cứu một vé, chỉ cho chủ tài khoản đọc được.
 app.get('/my-bookings/:code', (req, res) => {
   const session = requireUser(req, res)
   if (!session) return
@@ -237,6 +249,7 @@ app.get('/my-bookings/:code', (req, res) => {
   res.json(booking)
 })
 
+// Tạo vé cho khách; kiểm tra mã vé và ghế trùng trước khi lưu.
 app.post('/my-bookings', (req, res) => {
   const session = requireUser(req, res)
   if (!session) return
@@ -277,6 +290,7 @@ app.post('/my-bookings', (req, res) => {
   res.status(201).json(booking)
 })
 
+// Cho phép chủ tài khoản xóa vé của mình.
 app.delete('/my-bookings/:code', (req, res) => {
   const session = requireUser(req, res)
   if (!session) return
@@ -289,11 +303,13 @@ app.delete('/my-bookings/:code', (req, res) => {
   res.status(204).end()
 })
 
+// Trả toàn bộ danh sách vé cho admin đã xác thực.
 app.get('/admin/bookings', (req, res) => {
   if (!requireAdminUser(req, res)) return
   res.json(ensureBookings().value())
 })
 
+// Cập nhật trạng thái hoặc ghế của vé, đồng thời kiểm tra xung đột ghế.
 app.patch('/admin/bookings/:code', (req, res) => {
   if (!requireAdminUser(req, res)) return
   const allowedStatuses = ['Đã thanh toán', 'Chờ xác nhận', 'Đã hoàn tiền', 'Đã hủy']
@@ -339,6 +355,7 @@ app.patch('/admin/bookings/:code', (req, res) => {
   res.json(booking)
 })
 
+// Xóa vé khỏi danh sách quản trị sau khi kiểm tra quyền admin.
 app.delete('/admin/bookings/:code', (req, res) => {
   if (!requireAdminUser(req, res)) return
   const collection = ensureBookings()
@@ -349,11 +366,13 @@ app.delete('/admin/bookings/:code', (req, res) => {
   res.status(204).end()
 })
 
+// Nạp thư viện email nếu đã cài đặt; nếu không thì endpoint chỉ ghi nhận demo.
 let nodemailer = null
 try {
   nodemailer = require('nodemailer')
 } catch {}
 
+// Gửi vé qua Gmail nếu có cấu hình; nếu chưa có thì trả trạng thái mô phỏng.
 app.post('/send-ticket-email', async (req, res) => {
   const { email, booking, htmlContent } = req.body || {}
   if (!email || !booking) {
@@ -392,6 +411,7 @@ app.post('/send-ticket-email', async (req, res) => {
   })
 })
 
+// Ép tài khoản đăng ký mang role customer và chặn tự cấp quyền admin.
 app.use((req, res, next) => {
   if (req.method === 'POST' && ['/register', '/signup'].includes(req.path.toLowerCase())) {
     req.body.role = 'customer'

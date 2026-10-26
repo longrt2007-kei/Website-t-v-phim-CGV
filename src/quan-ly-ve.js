@@ -221,6 +221,7 @@ async function refreshTickets() {
   }
 }
 
+// Vẽ sơ đồ ghế cho vé đang được admin chỉnh sửa.
 function renderSeatEditor() {
   const rows = 'ABCDEFGH'.split('')
   $('#seatEditorMap').innerHTML = rows.map((row) => `<div class="seat-editor-row"><span>${row}</span>${Array.from({ length: 10 }, (_, index) => {
@@ -232,6 +233,7 @@ function renderSeatEditor() {
   $('#seatEditorInfo').textContent = `${editingTicket?.movie || ''} · ${editingTicket?.date || ''} ${editingTicket?.time || ''} · ${selectedSeats.size} ghế đang chọn`
 }
 
+// Mở trình sửa ghế và khóa các ghế đã được vé khác/khách khác giữ.
 async function openSeatEditor(ticket) {
   editingTicket = ticket
   selectedSeats = new Set((ticket.seats || []).map(String))
@@ -250,9 +252,11 @@ async function openSeatEditor(ticket) {
   renderSeatEditor()
   $('#seatEditor').showModal()
 }
+// Đánh dấu trạng thái thanh toán hiện tại trong danh sách lựa chọn.
 function status(ticket, value) {
   return (ticket.paymentStatus || 'Đã thanh toán') === value ? 'selected' : ''
 }
+// Cập nhật danh sách ngay khi thay đổi từ khóa, trạng thái hoặc thứ tự.
 $('#search').addEventListener('input', render)
 $('#status').addEventListener('change', render)
 $('#sort').addEventListener('change', render)
@@ -292,6 +296,7 @@ $('#rows').addEventListener('click', async (e) => {
     alert(`Không xóa được vé: ${error.message}`)
   }
 })
+// Cho phép quản trị viên chọn/bỏ ghế trong sơ đồ của vé.
 $('#seatEditorMap').addEventListener('click', (event) => {
   const button = event.target.closest('[data-editor-seat]')
   if (!button || button.disabled) return
@@ -323,6 +328,7 @@ $('#saveTicketSeats').addEventListener('click', async (event) => {
     button.disabled = false
   }
 })
+// Đồng bộ bảng vé và ghế khi tab khác cập nhật dữ liệu đặt chỗ.
 window.addEventListener('storage', (event) => {
   if (!event.key || event.key === 'cgv_demo_shared_holds_v1' || event.key === 'cgv_seat_holds_v1') {
     render()

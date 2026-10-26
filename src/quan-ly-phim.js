@@ -6,6 +6,7 @@ import { requireAdmin } from './shared/admin-auth.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
 
+// Trang quản lý danh mục phim: lọc, thêm, sửa và xóa dữ liệu phim.
 const statuses = { showing: 'Đang chiếu', upcoming: 'Sắp chiếu', archived: 'Ngừng chiếu' }
 const genres = [
   'Hành động',
@@ -17,17 +18,20 @@ const genres = [
   'Khoa học viễn tưởng',
   'Khác',
 ]
+// Mã hóa dữ liệu phim trước khi đưa vào HTML.
 const escape = (value) =>
   String(value ?? '').replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   )
+// Chuẩn hóa chữ để tìm kiếm tiếng Việt không phân biệt dấu.
 const normalize = (value) =>
   value
     .toLocaleLowerCase('vi')
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .replace(/đ/g, 'd')
+// Chỉ nhận URL poster dùng giao thức HTTP/HTTPS.
 const safePoster = (value) => {
   try {
     const url = new URL(value, location.origin)
@@ -178,9 +182,11 @@ ${adminNav('movies')}
   </div>`
 
 const $ = (selector) => document.querySelector(selector)
+// Gọi lớp CRUD cục bộ cho collection phim.
 async function request(path = '', options = {}) {
   return apiRequest('movies', path, options)
 }
+// Áp dụng từ khóa, trạng thái, thể loại và thứ tự sắp xếp.
 function filtered() {
   const query = normalize($('#search').value.trim())
   return movies
@@ -198,6 +204,7 @@ function filtered() {
           : (b.updatedAt || '').localeCompare(a.updatedAt || ''),
     )
 }
+// Vẽ thống kê, bảng phim, phân trang và trạng thái ảnh poster.
 function render() {
   $('#stats').innerHTML = [
     ['Tổng số phim', movies.length, 'Trong thư viện của bạn'],
@@ -271,6 +278,7 @@ function render() {
   $('#prev').disabled = page === 1
   $('#next').disabled = page === pages
 }
+// Đọc phim từ localStorage rồi cập nhật trạng thái kết nối trên giao diện.
 async function load() {
   $('#error').hidden = true
   try {
@@ -290,6 +298,7 @@ async function load() {
   }
 }
 let toastTimer
+// Hiện thông báo ngắn sau thao tác thêm/sửa/xóa.
 function toast(message) {
   clearTimeout(toastTimer)
   $('#toast').textContent = message
@@ -298,6 +307,7 @@ function toast(message) {
     $('#toast').hidden = true
   }, 3500)
 }
+// Mở biểu mẫu thêm phim mới hoặc điền sẵn thông tin phim đang sửa.
 function openEditor(movie = null) {
   editingId = movie?.id ?? null
   $('#movie-form').reset()

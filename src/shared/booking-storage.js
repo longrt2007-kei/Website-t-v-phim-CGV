@@ -73,12 +73,14 @@ export async function deleteUserBooking(code) {
 }
 
 // Các hàm quản trị: tải, cập nhật trạng thái và xóa vé.
+// Lấy token admin của API nếu chế độ quản trị đang dùng phiên máy chủ.
 const getAdminApiToken = () => {
   const adminToken = localStorage.getItem('cgv_admin_token_v1') || ''
   if (localStorage.getItem('cgv_admin_session_v1') === 'signed-in') return adminToken
   return localStorage.getItem('cgv_auth_token_v1') || ''
 }
 
+// Tải danh sách vé cho trang quản trị từ nguồn dữ liệu hiện tại.
 export async function loadAdminBookings() {
   const token = getAdminApiToken()
   if (token) {
@@ -91,6 +93,7 @@ export async function loadAdminBookings() {
   return getBookings()
 }
 
+// Cập nhật trạng thái thanh toán của một vé.
 export async function updateAdminBookingStatus(code, paymentStatus) {
   const token = getAdminApiToken()
   if (token) {
@@ -111,6 +114,7 @@ export async function updateAdminBookingStatus(code, paymentStatus) {
   return booking
 }
 
+// Cập nhật ghế của vé và tính lại tổng tiền theo số ghế mới.
 export async function updateAdminBookingSeats(code, seats) {
   const token = getAdminApiToken()
   if (token) {
@@ -134,6 +138,7 @@ export async function updateAdminBookingSeats(code, seats) {
   return booking
 }
 
+// Xóa vé trong danh sách admin.
 export async function deleteAdminBooking(code) {
   const token = getAdminApiToken()
   if (token) {
@@ -205,6 +210,7 @@ export function markUserNotificationsRead(user) {
   )
 }
 // Đọc trạng thái ghế đã đặt theo từng suất chiếu.
+// Đọc sơ đồ ghế đã đặt theo từng suất chiếu.
 export function getSeatMap() {
   try {
     return JSON.parse(localStorage.getItem(SEAT_STORAGE_KEY) || '{}')
@@ -212,9 +218,11 @@ export function getSeatMap() {
     return {}
   }
 }
+// Ghi sơ đồ ghế đã đặt vào localStorage.
 export function saveSeatMap(map) {
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(map))
 }
+// Tạo khóa nhận diện duy nhất cho phim/rạp/phòng/ngày/giờ.
 export function bookingKey(b) {
   return `${b.movie}__${b.theaterId}__${b.date}__${b.time}__${String(b.room || '01')}`
 }
@@ -236,14 +244,17 @@ export function releaseBookingSeats(booking) {
     saveSeatMap(map)
   }
 }
+// Định dạng số tiền theo cách hiển thị tiếng Việt.
 export const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`
+// Định dạng thời điểm thành ngày giờ dễ đọc.
 export const formatDateTime = (value) => (value ? new Date(value).toLocaleString('vi-VN') : '—')
 
-// Khóa lưu các ghế giữ tạm; danh sách shared được các tab cùng trình duyệt theo dõi.
+// Lưu các ghế giữ tạm để những tab khác trong cùng trình duyệt cùng theo dõi.
 export const SEAT_HOLD_STORAGE_KEY = 'cgv_seat_holds_v1'
 const HOLDS_COLLECTION_KEY = 'cgv_demo_shared_holds_v1'
 export const DEFAULT_HOLD_DURATION_SECONDS = 300 // 5 phút
 
+// Đọc danh sách giữ ghế đồng bộ giữa các tab cùng trình duyệt.
 function readSharedHolds() {
   try {
     return JSON.parse(localStorage.getItem(HOLDS_COLLECTION_KEY) || '[]')
@@ -252,6 +263,7 @@ function readSharedHolds() {
   }
 }
 
+// Ghi danh sách giữ ghế và báo các tab khác làm mới giao diện.
 function writeSharedHolds(holds) {
   try {
     localStorage.setItem(HOLDS_COLLECTION_KEY, JSON.stringify(holds))
@@ -273,10 +285,12 @@ export function cleanExpiredHolds() {
   }
 }
 
+// Đọc lượt giữ còn hạn từ localStorage.
 export function getSeatHolds() {
   return cleanExpiredHolds()
 }
 
+// Thử tải lượt giữ từ API; nếu API lỗi thì dùng dữ liệu lưu cục bộ.
 export async function loadSeatHolds() {
   try {
     const response = await fetch(apiUrl('/seat-holds'))
@@ -291,6 +305,7 @@ export async function loadSeatHolds() {
   return cleanExpiredHolds()
 }
 
+// Lưu lượt giữ vào cả kho dùng chung giữa tab và khóa tương thích cũ.
 export function saveSeatHolds(holds) {
   writeSharedHolds(holds)
   try { localStorage.setItem(SEAT_HOLD_STORAGE_KEY, JSON.stringify(holds)) } catch {}

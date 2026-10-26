@@ -60,7 +60,9 @@ mountUserNav()
 const grid = document.querySelector('#ticketGrid'),
   search = document.querySelector('#ticketSearch'),
   toast = document.querySelector('#toast')
+// Mở hộp thoại in của trình duyệt cho danh sách vé.
 document.querySelector('#printTickets').addEventListener('click', () => window.print())
+// Hiện thông báo ngắn sau khi sao chép hoặc xóa vé.
 function notify(text) {
   toast.textContent = text
   toast.classList.add('show')
@@ -125,6 +127,7 @@ function render() {
         .join('')
     : `<div class="ticket-empty">${q ? 'Không tìm thấy vé phù hợp.' : 'Bạn chưa có vé nào.'} <a href="/trangchu.html#showing">Đặt vé ngay</a>.</div>`
 }
+// Lọc danh sách vé ngay khi khách nhập từ khóa.
 search.addEventListener('input', (e) => {
   query = e.target.value
   render()

@@ -9,6 +9,7 @@ import {
   movieDetails,
 } from '../data/home-catalog.js'
 
+// Lấy thông tin chi tiết đã có hoặc trả về nội dung mặc định cho phim.
 export const getMovieDetail = (movie) =>
   movieDetails[movie.title] || {
     synopsis: movie.short || 'Thông tin nội dung đang được cập nhật.',
@@ -27,6 +28,7 @@ export const getMovieDetail = (movie) =>
     sourceUrl: '/admin.html',
   }
 
+// Dựng danh sách suất chiếu sắp tới theo ngày và rạp được chọn.
 export const renderUpcomingShowtimes = (dateKey, theaterId) => {
   const date = upcomingShowtimes[dateKey]
   const rows = date?.theaters?.[theaterId] || []
@@ -48,6 +50,7 @@ export const renderUpcomingShowtimes = (dateKey, theaterId) => {
     .join('')
 }
 
+// Tạo phần poster phim, huy hiệu, thể loại và nút xem trailer nếu cần.
 export const poster = (m, opts = {}) => `
   <div class="poster" style="background:${m.color}">
     ${m.image ? `<img class="poster-img" src="${m.image}" alt="Poster ${m.title}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${m.fallback || ''}'" />` : ''}
@@ -63,6 +66,7 @@ export const poster = (m, opts = {}) => `
   </div>
 `
 
+// Tạo thẻ phim hoàn chỉnh để chèn vào danh sách trang chủ.
 export const movieCard = (m, opts = {}) => `
   <article class="movie-card" data-title="${m.title}" data-origin="${m.origin}" data-meta="${(m.meta || '').toLowerCase()}">
     ${poster(m, opts)}
@@ -86,6 +90,7 @@ export const movieCard = (m, opts = {}) => `
   </article>
 `
 
+// Dựng giờ chiếu mẫu cho một rạp.
 export const renderShowtimes = (id) => {
   const rows = showtimes[id] || []
   if (!rows.length) return '<p class="empty-showtimes">Rạp này chưa có lịch chiếu.</p>'
@@ -106,6 +111,7 @@ export const renderShowtimes = (id) => {
     .join('')
 }
 
+// Tạo các lựa chọn rạp, có thể giới hạn theo khu vực.
 export const theaterOptions = (region = 'all') => {
   const rows = region === 'all' ? theaters : theaters.filter((t) => t.region === region)
   return rows.map((t) => `<option value="${t.id}">${t.name} · ${t.city}</option>`).join('')

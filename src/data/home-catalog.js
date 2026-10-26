@@ -1,5 +1,6 @@
 const now = new Date()
 
+// Dữ liệu mẫu phim/rạp/lịch chiếu dùng để dựng giao diện khi cần dự phòng.
 export const fallbackPoster = (slug) => `./posters/2026-${slug}.svg`
 
 export const officialPosterFallback = './posters/poster-unavailable.svg'
@@ -340,6 +341,7 @@ export const baseTimes = [
   ['10:20', '13:05', '15:50', '18:35', '21:20'],
 ]
 
+// Sinh lịch chiếu mẫu riêng cho rạp theo vị trí của rạp trong danh sách.
 export const makeTheaterShowtimes = (theaterIndex) => {
   const start = theaterIndex % showing.length
   const pool = [...showing.slice(start), ...showing.slice(0, start)]
@@ -363,6 +365,7 @@ export const weekdayLabels = [
   'Thứ Sáu',
   'Thứ Bảy',
 ]
+// Định dạng số ngày/tháng với hai chữ số.
 export const pad2 = (value) => String(value).padStart(2, '0')
 export const datePlans = Array.from({ length: 4 }, (_, dayIndex) => {
   const date = new Date(now)

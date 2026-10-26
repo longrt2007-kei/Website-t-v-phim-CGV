@@ -1,11 +1,14 @@
+// Tạo thanh điều hướng đăng nhập/tài khoản dùng chung trên các trang khách.
 import { getCachedUser, isAuthenticated, logoutUser } from './auth.js'
 
+// Mã hóa tên tài khoản trước khi đưa vào liên kết.
 const esc = (s) =>
   String(s ?? '').replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   )
 
+// Gắn nút đăng nhập hoặc liên kết tài khoản tùy trạng thái phiên hiện tại.
 export function mountUserNav() {
   document.querySelectorAll('[data-user-nav]').forEach((el) => el.remove())
   const logged = isAuthenticated()
@@ -35,6 +38,7 @@ export function mountUserNav() {
   }
 }
 
+// Bắt nút đăng xuất ở mọi trang có thanh điều hướng khách.
 document.addEventListener('click', (e) => {
   if (!e.target.closest('[data-logout]')) return
   logoutUser()

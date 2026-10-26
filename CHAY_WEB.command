@@ -1,4 +1,5 @@
 #!/bin/bash
+# Khởi động API json-server-auth và máy chủ Vite trên macOS/Linux.
 cd "$(dirname "$0")"
 if ! command -v node >/dev/null 2>&1; then
   echo "[LỖI] Chưa cài Node.js 18+."

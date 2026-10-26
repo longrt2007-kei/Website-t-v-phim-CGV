@@ -1,3 +1,4 @@
+// Trang đăng nhập quản trị; tài khoản được kiểm tra bởi shared/admin-auth.js.
 import './auth-pages.css'
 import { adminReturnUrl, isAdminAuthenticated, loginAdmin } from './shared/admin-auth.js'
 
@@ -41,6 +42,7 @@ document.querySelector('#app').innerHTML =
     </section>
     </main>`
 
+// Gửi tài khoản admin, hiện lỗi nếu sai và chuyển trang khi đăng nhập được.
 document.querySelector('#adminLoginForm').addEventListener('submit', async (event) => {
   event.preventDefault()
   const button = document.querySelector('#submit')

@@ -1,5 +1,6 @@
 ﻿import { clearAdminSession, getAdminUser } from './admin-auth.js'
 
+// Dựng menu admin và đánh dấu mục trang hiện tại.
 export function adminNav(active) {
   const admin = getAdminUser()
   const items = [
@@ -23,6 +24,7 @@ export function adminNav(active) {
   </aside>`
 }
 
+// Xóa phiên và quay về trang đăng nhập khi admin chọn đăng xuất.
 document.addEventListener('click', (event) => {
   if (!event.target.closest('#adminLogoutNav')) return
   clearAdminSession()

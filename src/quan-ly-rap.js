@@ -4,6 +4,7 @@ import { apiRequest } from './shared/api.js'
 import { adminNav } from './shared/dieu-huong-quan-tri.js'
 import { requireAdmin } from './shared/admin-auth.js'
 if (!requireAdmin()) throw new Error('Admin authentication required')
+// Trang quản lý rạp: lọc danh sách và chỉnh sửa thông tin từng rạp.
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? '').replace(
@@ -101,6 +102,7 @@ $('#app').innerHTML =
     </div>
     </form>
     </dialog>`
+// Lọc rạp theo tên/địa chỉ/thành phố và khu vực.
 function filtered() {
   const q = $('#search').value.toLowerCase(),
     r = $('#region').value
@@ -110,6 +112,7 @@ function filtered() {
       (!r || x.region === r),
   )
 }
+// Vẽ số liệu tổng hợp và bảng rạp khớp bộ lọc.
 function render() {
   const f = filtered()
   $('#count').textContent = `(${rows.length})`
@@ -153,6 +156,7 @@ function render() {
     )
     .join('')
 }
+// Tải danh sách rạp từ kho dữ liệu cục bộ.
 async function load() {
   try {
     rows = await apiRequest('theaters')
@@ -162,6 +166,7 @@ async function load() {
     $('#error').textContent = 'Không kết nối được API. Hãy chạy npm run dev.'
   }
 }
+// Mở biểu mẫu rạp, điền sẵn dữ liệu nếu đang ở chế độ sửa.
 function open(x) {
   editing = x || null
   $('#form').reset()

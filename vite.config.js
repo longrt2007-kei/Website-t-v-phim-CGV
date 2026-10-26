@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Xác định thư mục dự án để khai báo các trang HTML nhiều điểm vào.
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
@@ -10,6 +11,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     open: '/trangchu.html',
+    // Chuyển yêu cầu /api của giao diện tới json-server-auth chạy cổng 3001.
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3001',
@@ -19,6 +21,7 @@ export default defineConfig({
     },
   },
   build: {
+    // Đóng gói từng trang HTML để các trang vẫn mở được sau khi build.
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'index.html'),

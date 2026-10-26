@@ -8,6 +8,7 @@ import { getSeatHolds, loadAdminBookings, loadSeatHolds } from './shared/booking
 import { theaters as bookingTheaters } from './data/home-catalog.js'
 
 if (!requireAdmin()) throw new Error('Admin authentication required')
+// Trang quản lý phòng: lưu phòng chiếu và đối chiếu sơ đồ với vé/ghế đang giữ.
 
 const STORAGE_KEY = 'cgv_demo_admin_rooms'
 const $ = (selector) => document.querySelector(selector)
@@ -44,31 +45,42 @@ $('#app').innerHTML = `${adminNav('rooms')}<main>
   </div><div class="dialog-footer"><button type="button" class="button" id="cancel">Hủy</button><button class="button primary">Lưu phòng</button></div>
 </form></dialog>`
 
+// Đọc danh sách phòng đã lưu cục bộ; dữ liệu lỗi thì trả về mảng rỗng.
 const readRooms = () => {
   try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(value) ? value : [] } catch { return [] }
 }
+// Ghi danh sách phòng hiện tại vào localStorage.
 const writeRooms = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(rooms))
+// Tra tên rạp, trả về nhãn dự phòng nếu rạp đã bị xóa.
 const theaterName = (id) => theaters.find((item) => String(item.id) === String(id))?.name || 'Rạp đã xóa'
+// Bỏ qua vé đã hủy/hoàn tiền khi tính số ghế đang bận.
 const activeBookings = () => bookings.filter((booking) => !['Đã hủy', 'Đã hoàn tiền'].includes(booking.paymentStatus))
+// Lấy các vé đang còn hiệu lực thuộc phòng này.
 const roomBookings = (room) => activeBookings().filter((booking) =>
   String(booking.theaterId) === String(room.theaterId) && String(booking.room || '01') === String(room.name),
 )
+// Tìm số liệu phòng do API cung cấp, nếu có.
 const savedRoomSummary = (room) => roomOccupancy.find((item) =>
   String(item.theaterId) === String(room.theaterId) && String(item.room) === String(room.name),
 )
+// Gộp ghế từ vé cục bộ và số liệu API thành tập ghế đã đặt.
 const bookedSeats = (room) => new Set([
   ...roomBookings(room).flatMap((booking) => booking.seats || []),
   ...(savedRoomSummary(room)?.seats || []),
 ].map(String))
+// Đếm khách theo người dùng/email/mã vé, tránh đếm lặp cùng một khách.
 const roomCustomerCount = (room) => savedRoomSummary(room)?.customerCount ?? new Set(
   roomBookings(room).map((booking) => booking.userId || booking.userEmail || booking.code),
 ).size
+// Chọn lượt giữ ghế thuộc đúng rạp và phòng.
 const roomHolds = (room) => holds.filter((hold) => {
   const parts = String(hold.key || '').split('__')
   return String(parts[1]) === String(room.theaterId) && String(parts[4] || '01') === String(room.name)
 })
+// Gộp ghế đang được giữ tạm trong phòng.
 const heldSeats = (room) => new Set(roomHolds(room).flatMap((hold) => hold.seats || []).map(String))
 
+// Hiển thị tổng phòng, phòng hoạt động, ghế đặt và ghế giữ.
 function renderStats() {
   const active = rooms.filter((room) => room.status === 'active').length
   const reserved = rooms.reduce((total, room) => total + bookedSeats(room).size, 0)
@@ -81,6 +93,7 @@ function renderStats() {
   ].map(([label, value, caption]) => `<article class="stat"><span>${label}</span><strong>${value}</strong><small>${caption}</small></article>`).join('')
 }
 
+// Vẽ danh sách phòng, áp dụng bộ lọc rạp và hiện trạng thái từng phòng.
 function renderRooms() {
   const theaterId = $('#theaterFilter').value
   const visible = rooms.filter((room) => !theaterId || String(room.theaterId) === theaterId)
@@ -96,6 +109,7 @@ function renderRooms() {
   }).join('') : '<div class="empty">Chưa có phòng cho rạp này. Chọn “Thêm phòng” để tạo phòng chiếu.</div>'
 }
 
+// Vẽ sơ đồ 8×10 và phân biệt ghế trống, đang giữ, đã đặt.
 function renderSeats() {
   const room = rooms.find((item) => item.id === selectedRoomId)
   if (!room) {
@@ -121,12 +135,14 @@ function renderSeats() {
   }).join('')}</div>`).join('')
 }
 
+// Cập nhật đồng thời thống kê, danh sách phòng và sơ đồ ghế.
 function render() {
   renderStats()
   renderRooms()
   renderSeats()
 }
 
+// Làm mới dữ liệu người đặt/ghế từ API rồi cập nhật sơ đồ.
 async function refreshRoomOccupancy() {
   try {
     const response = await fetch(apiUrl('/room-occupancy'))
@@ -138,6 +154,7 @@ async function refreshRoomOccupancy() {
   render()
 }
 
+// Mở biểu mẫu thêm phòng hoặc điền dữ liệu phòng cần sửa.
 function openEditor(room = null) {
   editingId = room?.id || ''
   $('#roomForm').reset()
@@ -152,11 +169,11 @@ function openEditor(room = null) {
   $('#editor').showModal()
 }
 
+// Tải rạp, phòng, vé và lượt giữ ghế để dựng trang quản lý phòng.
 async function load() {
   try {
     const adminTheaters = await apiRequest('theaters')
-    // The booking flow uses home-catalog; include that full list so every
-    // booked theater has a corresponding room in the admin map.
+    // Ghép đủ các rạp trong danh mục đặt vé để sơ đồ quản trị không thiếu phòng.
     theaters = bookingTheaters.map((theater) => ({
       ...adminTheaters.find((item) => String(item.id) === String(theater.id)),
       id: theater.id,
@@ -196,6 +213,7 @@ async function load() {
   }
 }
 
+// Mở biểu mẫu, đổi bộ lọc và chọn phòng trên sơ đồ quản trị.
 $('#addRoom').addEventListener('click', () => openEditor())
 $('#cancel').addEventListener('click', () => $('#editor').close())
 $('#theaterFilter').addEventListener('change', () => {
@@ -219,6 +237,7 @@ $('#roomList').addEventListener('click', (event) => {
   }
   if (card) { selectedRoomId = card.dataset.room; render() }
 })
+// Kiểm tra biểu mẫu rồi lưu phòng mới hoặc cập nhật phòng đang sửa.
 $('#roomForm').addEventListener('submit', (event) => {
   event.preventDefault()
   const data = Object.fromEntries(new FormData(event.currentTarget))

@@ -48,7 +48,7 @@ const today = now.toLocaleDateString('vi-VN', {
   year: 'numeric',
 })
 
-// Hàm tiện ích đọc/ghi JSON trong localStorage, có giá trị dự phòng khi lỗi.
+// Đọc JSON trong localStorage an toàn và trả về giá trị mặc định nếu dữ liệu lỗi.
 const storageGet = (key, fallback = []) => {
   try {
     return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback))
@@ -56,12 +56,13 @@ const storageGet = (key, fallback = []) => {
     return fallback
   }
 }
+// Ghi dữ liệu đặt vé vào localStorage để vẫn dùng được khi API tạm lỗi.
 const storageSet = (key, value) => {
   try {
     localStorage.setItem(key, JSON.stringify(value))
   } catch {}
 }
-// Tạo khóa riêng cho sơ đồ ghế của từng phim, rạp, ngày và giờ chiếu.
+// Tạo khóa ghế riêng cho một phim, rạp, ngày và giờ chiếu.
 const bookingKey = (movie, theaterId, date, time) => `${movie}__${theaterId}__${date}__${time}`
 const ticketPrice = 85000
 
@@ -474,10 +475,13 @@ mountUserNav()
 
 const PAYMENT_BANK = 'BIDV'
 const PAYMENT_ACCOUNT = '8855252740'
+// Tạo địa chỉ ảnh QR chuyển khoản theo số tiền và nội dung chuyển khoản.
 const paymentQrUrl = (amount, content) =>
   `https://img.vietqr.io/image/${PAYMENT_BANK}-${PAYMENT_ACCOUNT}-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(content)}`
+// Lấy các dòng lịch chiếu theo ngày, ưu tiên lịch sắp tới đã cấu hình.
 const getScheduleRows = (theaterId, date) =>
   upcomingShowtimes[date]?.theaters?.[theaterId] || showtimes[theaterId] || []
+// Tìm các khung giờ của một phim tại rạp và ngày cụ thể.
 const getMovieTimes = (movieTitle, theaterId, date) =>
   getScheduleRows(theaterId, date).find((row) => row.title === movieTitle)?.times || []
 
@@ -573,6 +577,7 @@ const renderTicket = (booking, syncWarning = '') => {
   const emailInput = document.querySelector('#modalTicketEmailInput')
   const emailMsg = document.querySelector('#modalEmailMsg')
 
+  // Mở bản nháp email với thông tin vé và lưu địa chỉ email vào vé cục bộ.
   const sendEmailAction = async () => {
     const email = emailInput?.value.trim()
     if (!email) return
@@ -606,6 +611,7 @@ const renderTicket = (booking, syncWarning = '') => {
 
 let currentHoldTimer = null
 let currentHoldId = null
+// Dừng bộ đếm thời gian giữ ghế trước khi chuyển bước hoặc đóng hộp thoại.
 const clearHoldTimer = () => {
   if (currentHoldTimer) {
     clearInterval(currentHoldTimer)
@@ -820,6 +826,7 @@ const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupie
   const totalSec = hold?.durationSeconds || DEFAULT_HOLD_DURATION_SECONDS
   const expiresAt = hold?.expiresAt || Date.now() + totalSec * 1000
 
+  // Cập nhật thời gian còn lại và giải phóng ghế khi hết giờ giữ.
   const updateTimer = () => {
     const now = Date.now()
     const remaining = Math.max(0, Math.round((expiresAt - now) / 1000))
@@ -886,13 +893,13 @@ const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupie
       const savedBooking = await createUserBooking(booking)
       renderTicket(savedBooking)
     } catch (error) {
-      // Payment is already confirmed in this flow. Keep the local ticket and
-      // barcode visible even when the shared API cannot sync the booking.
+      // Thanh toán demo đã xác nhận; vẫn giữ vé và mã vạch nếu API chưa đồng bộ được.
       renderTicket(booking, `Vé đã tạo nhưng chưa đồng bộ lên hệ thống: ${error.message || 'Vui lòng thử lại sau.'}`)
     }
   })
 }
 
+// Mở danh sách vé đã lưu trên trình duyệt hiện tại.
 const openMyTickets = () => {
   const bookings = storageGet('cgv_bookings_v1', [])
   document.querySelector('#modalContent').innerHTML = `
@@ -925,6 +932,7 @@ const openMyTickets = () => {
   document.body.style.overflow = 'hidden'
 }
 
+// Mở cửa sổ phim, lịch chiếu hoặc quy trình mua vé.
 const openModal = (title, mode = 'buy') => {
   const m = [...showing, ...comingSoon].find((x) => x.title === title)
   if (!m) return
@@ -932,6 +940,7 @@ const openModal = (title, mode = 'buy') => {
   const defaultTheater =
     theaters.find((t) => getMovieTimes(m.title, t.id, datePlans[0][0]).length) || theaters[0]
   // Hiển thị giờ chiếu tương ứng với rạp và ngày người dùng chọn.
+  // Dựng danh sách giờ chiếu theo rạp/ngày trong hộp đặt vé.
   const renderBookingTimes = (theaterId, date) => {
     const times = getMovieTimes(m.title, theaterId, date)
     const timesBox = document.querySelector('#bookingTimes')
@@ -1005,6 +1014,7 @@ const openModal = (title, mode = 'buy') => {
   }
 }
 
+// Mở nội dung chi tiết và lịch chiếu của phim được chọn.
 const openMovieDetail = (title) => {
   const m = [...showing, ...comingSoon].find((x) => x.title === title)
   if (!m) return
@@ -1114,6 +1124,7 @@ const openMovieDetail = (title) => {
   })
 }
 
+// Đóng hộp thoại hiện tại và dọn bộ đếm/lượt giữ ghế còn tồn tại.
 const closeModal = () => {
   clearHoldTimer()
   if (currentHoldId) {
@@ -1124,6 +1135,7 @@ const closeModal = () => {
   document.body.style.overflow = ''
 }
 
+// Bắt nút xem phim/đặt vé trên các thẻ để mở đúng nội dung hoặc luồng mua vé.
 document.addEventListener('click', (e) => {
   const detail = e.target.closest('[data-detail]')
   if (detail) {
@@ -1168,6 +1180,7 @@ document.addEventListener('click', (e) => {
 let activeRegion = 'north'
 let activeTheater = theaters.find((t) => t.region === activeRegion)?.id || theaters[0].id
 
+// Cập nhật rạp đang chọn để đồng bộ các khu vực lịch chiếu trên trang chủ.
 const updateActiveTheater = (theaterId) => {
   const th = theaters.find((t) => t.id === theaterId)
   if (!th) return
@@ -1218,6 +1231,7 @@ if (filterBar) {
 let upcomingDate = datePlans[0][0]
 let upcomingTheater = theaters[0].id
 
+// Làm mới phần lịch chiếu sắp tới theo rạp/ngày đang chọn.
 const updateUpcomingShowtimes = () => {
   const date = upcomingShowtimes[upcomingDate]
   const theater = theaters.find((t) => t.id === upcomingTheater)
@@ -1244,6 +1258,7 @@ document.querySelector('#upcomingTheaterSelect').addEventListener('change', (e) 
   updateUpcomingShowtimes()
 })
 
+// Điều khiển menu thu gọn và hộp tìm kiếm trên màn hình nhỏ.
 const burger = document.querySelector('#burger')
 const nav = document.querySelector('#nav')
 burger.addEventListener('click', () => {
@@ -1265,6 +1280,7 @@ searchOpen.addEventListener('click', () => {
   document.body.style.overflow = 'hidden'
   setTimeout(() => searchInput.focus(), 50)
 })
+// Đóng lớp tìm kiếm và trả trạng thái giao diện về bình thường.
 const closeSearch = () => {
   searchOverlay.classList.remove('open')
   searchInput.value = ''
@@ -1311,10 +1327,12 @@ document.addEventListener('click', (e) => {
 })
 
 // Đồng bộ thư viện phim trên trang chủ với json-server của trang quản lý.
+// Chuẩn hóa nội dung phim từ API trước khi đưa vào trang chủ.
 const cleanCatalogText = (value, fallback = '') =>
   String(value ?? fallback)
     .replace(/[<>"']/g, '')
     .trim()
+// Chọn ảnh poster có URL hợp lệ, nếu không dùng ảnh dự phòng.
 const safeCatalogPoster = (value, fallback = '') => {
   try {
     const url = new URL(value || fallback, window.location.origin)
@@ -1323,10 +1341,12 @@ const safeCatalogPoster = (value, fallback = '') => {
     return fallback
   }
 }
+// Chuyển ngày nhận từ API sang định dạng hiển thị trên thẻ phim.
 const formatCatalogDate = (value) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
   return match ? `${match[3]}/${match[2]}/${match[1]}` : 'Đang cập nhật'
 }
+// Chuyển cấu trúc phim API sang cấu trúc mà các thành phần trang chủ sử dụng.
 const apiMovieToCatalogMovie = (movie) => {
   const base =
     seedMoviesById[String(movie.id)] || allMovies.find((item) => item.title === movie.title) || {}
@@ -1358,6 +1378,7 @@ const apiMovieToCatalogMovie = (movie) => {
   }
 }
 
+// Vẽ lại danh mục phim và các khu vực phim sau khi đồng bộ dữ liệu quản lý.
 const renderSyncedCatalog = (managedMovies) => {
   const synced = managedMovies
     .map(apiMovieToCatalogMovie)
@@ -1412,6 +1433,7 @@ const renderSyncedCatalog = (managedMovies) => {
 }
 
 let catalogSnapshot = ''
+// Tải phim quản lý từ API; nếu lỗi, trang chủ tiếp tục dùng dữ liệu mẫu.
 const syncHomepageCatalog = async () => {
   try {
     const controller = new AbortController()

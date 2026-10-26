@@ -1,3 +1,4 @@
+// Trang đăng ký khách hàng: kiểm tra mật khẩu xác nhận rồi tạo tài khoản qua API.
 import './auth-pages.css'
 import { isAuthenticated, registerUser, returnUrl } from './shared/auth.js'
 
@@ -45,8 +46,10 @@ app.innerHTML = `<main class="auth-shell">
   </section>
   </main>`
 const returnTarget = returnUrl('/trangchu.html')
+// Giữ đường dẫn quay lại trong liên kết đăng nhập.
 document.querySelector('#loginLink').href =
   `/dang-nhap.html?return=${encodeURIComponent(returnTarget)}`
+// Kiểm tra biểu mẫu, gửi đăng ký và thông báo kết quả cho khách.
 document.querySelector('#registerForm').addEventListener('submit', async (e) => {
   e.preventDefault()
   const btn = document.querySelector('#submit'),

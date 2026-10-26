@@ -1,3 +1,4 @@
+// Trang đăng nhập khách: thu thập email/mật khẩu và gọi hàm đăng nhập dùng chung.
 import './auth-pages.css'
 import { isAuthenticated, loginUser, returnUrl } from './shared/auth.js'
 
@@ -41,8 +42,10 @@ app.innerHTML = `<main class="auth-shell">
   </section>
   </main>`
 const returnTarget = returnUrl('/trangchu.html')
+// Giữ lại trang khách muốn mở trước khi chuyển qua đăng ký.
 document.querySelector('#registerLink').href =
   `/dang-ky.html?return=${encodeURIComponent(returnTarget)}`
+// Gửi thông tin đăng nhập, chuyển trang khi thành công và hiện lỗi khi thất bại.
 document.querySelector('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault()
   const btn = document.querySelector('#submit'),

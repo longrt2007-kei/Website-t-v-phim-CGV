@@ -1,4 +1,5 @@
 @echo off
+REM Khởi động API json-server-auth và máy chủ Vite trên Windows.
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ========================================
