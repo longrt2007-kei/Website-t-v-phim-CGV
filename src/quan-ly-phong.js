@@ -15,6 +15,8 @@ const $ = (selector) => document.querySelector(selector)
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char])
+// Phân bổ định dạng mặc định trong mỗi cụm rạp: phòng 02 IMAX 2D, phòng 03 4DX 2D.
+const defaultRoomType = (index) => index === 1 ? 'IMAX 2D' : index === 2 ? '4DX 2D' : '2D'
 let theaters = []
 let rooms = []
 let bookings = []
@@ -199,9 +201,19 @@ async function load() {
         id: `${theater.id}-room-${String(index + 1).padStart(2, '0')}`,
         theaterId: theater.id,
         name: String(index + 1).padStart(2, '0'),
-        type: theater.id === 'landmark-81' && index === 2 ? 'IMAX' : '2D',
+        type: defaultRoomType(index),
         status: 'active',
       })))
+      roomsChanged = true
+    }
+    // Nâng cấp các phòng mặc định đã lưu từ phiên bản trước; không đổi phòng đã tùy chỉnh.
+    for (const room of rooms) {
+      const generatedRoom = theaters.some((theater) => String(theater.id) === String(room.theaterId))
+      const roomNumber = Number(room.name)
+      if (!generatedRoom || ![2, 3].includes(roomNumber) || room.type !== '2D') continue
+      const defaultId = `${room.theaterId}-room-${String(roomNumber).padStart(2, '0')}`
+      if (room.id !== defaultId) continue
+      room.type = defaultRoomType(roomNumber - 1)
       roomsChanged = true
     }
     if (roomsChanged) writeRooms()
