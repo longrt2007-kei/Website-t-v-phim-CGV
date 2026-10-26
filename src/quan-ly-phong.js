@@ -28,7 +28,7 @@ $('#app').innerHTML = `${adminNav('rooms')}<main>
   <section class="page-head"><div><h1>Quản lý phòng &amp; chỗ ngồi</h1><p>Quản lý phòng theo từng rạp và theo dõi ghế đã được khách đặt.</p></div><button class="button primary" id="addRoom">＋ Thêm phòng</button></section>
   <div id="error" class="alert" hidden></div>
   <section class="stats" id="stats"></section>
-  <section class="panel room-panel"><div class="panel-heading"><div><h2>Danh sách phòng</h2><span>Chọn phòng để xem sơ đồ ghế</span></div><select id="theaterFilter" aria-label="Lọc theo rạp"><option value="">Tất cả rạp</option></select></div>
+  <section class="panel room-panel"><div class="panel-heading"><div><h2>Danh sách phòng</h2><span>Chọn phòng để xem sơ đồ ghế</span></div><div class="room-filters"><select id="theaterFilter" aria-label="Lọc theo rạp"><option value="">Tất cả rạp</option></select><select id="typeFilter" aria-label="Lọc theo định dạng"><option value="">Tất cả định dạng</option><option>2D</option><option>IMAX 2D</option><option>4DX 2D</option><option>3D</option><option>IMAX</option><option>4DX</option><option>Gold Class</option></select></div></div>
     <div class="room-list" id="roomList"></div>
   </section>
   <section class="panel seat-panel" id="seatPanel"><div class="panel-heading"><div><h2 id="seatTitle">Sơ đồ ghế</h2><span id="seatSub">Chọn phòng để xem sơ đồ</span></div><div class="seat-legend"><span><i class="seat-dot free"></i>Còn trống</span><span><i class="seat-dot held"></i>Đang giữ chỗ</span><span><i class="seat-dot booked"></i>Đã đặt vé</span></div></div>
@@ -40,7 +40,7 @@ $('#app').innerHTML = `${adminNav('rooms')}<main>
 <dialog id="editor"><h2 id="dialogTitle">Thêm phòng</h2><form id="roomForm"><div class="form-grid">
   <label class="wide">Rạp *<select name="theaterId" id="theaterSelect" required></select></label>
   <label>Tên / mã phòng *<input name="name" required maxlength="32" placeholder="Ví dụ: 01, IMAX"></label>
-  <label>Định dạng<select name="type"><option>2D</option><option>3D</option><option>IMAX</option><option>4DX</option><option>Gold Class</option></select></label>
+  <label>Định dạng<select name="type"><option>2D</option><option>IMAX 2D</option><option>4DX 2D</option><option>3D</option><option>IMAX</option><option>4DX</option><option>Gold Class</option></select></label>
   <label class="wide">Trạng thái<select name="status"><option value="active">Đang hoạt động</option><option value="inactive">Tạm dừng</option></select></label>
   </div><div class="dialog-footer"><button type="button" class="button" id="cancel">Hủy</button><button class="button primary">Lưu phòng</button></div>
 </form></dialog>`
@@ -96,7 +96,11 @@ function renderStats() {
 // Vẽ danh sách phòng, áp dụng bộ lọc rạp và hiện trạng thái từng phòng.
 function renderRooms() {
   const theaterId = $('#theaterFilter').value
-  const visible = rooms.filter((room) => !theaterId || String(room.theaterId) === theaterId)
+  const type = $('#typeFilter').value
+  const visible = rooms.filter((room) =>
+    (!theaterId || String(room.theaterId) === theaterId) &&
+    (!type || String(room.type || '2D') === type),
+  )
   $('#roomList').innerHTML = visible.length ? visible.map((room) => {
     const count = savedRoomSummary(room)?.seatCount ?? bookedSeats(room).size
     const customers = roomCustomerCount(room)
@@ -218,6 +222,16 @@ $('#addRoom').addEventListener('click', () => openEditor())
 $('#cancel').addEventListener('click', () => $('#editor').close())
 $('#theaterFilter').addEventListener('change', () => {
   const visible = rooms.filter((room) => !$('#theaterFilter').value || String(room.theaterId) === $('#theaterFilter').value)
+  if (!visible.some((room) => room.id === selectedRoomId)) selectedRoomId = visible[0]?.id || ''
+  render()
+})
+$('#typeFilter').addEventListener('change', () => {
+  const theaterId = $('#theaterFilter').value
+  const type = $('#typeFilter').value
+  const visible = rooms.filter((room) =>
+    (!theaterId || String(room.theaterId) === theaterId) &&
+    (!type || String(room.type || '2D') === type),
+  )
   if (!visible.some((room) => room.id === selectedRoomId)) selectedRoomId = visible[0]?.id || ''
   render()
 })

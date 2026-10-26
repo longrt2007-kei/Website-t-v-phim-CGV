@@ -1,7 +1,8 @@
 /* Kiểu riêng cho danh sách phòng chiếu và sơ đồ ghế quản trị. */
 .room-panel { margin-bottom: 22px; }
 .room-panel .panel-heading { gap: 18px; flex-wrap: wrap; }
-.room-panel .panel-heading select { min-width: 220px; padding: 10px 12px; border: 1px solid #e1e3e8; border-radius: 8px; background: #fff; color: #333; }
+.room-filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.room-panel .panel-heading select { min-width: 190px; padding: 10px 12px; border: 1px solid #e1e3e8; border-radius: 8px; background: #fff; color: #333; }
 .room-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; padding: 18px; }
 .room-card { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 15px; border: 1px solid #e9e9ed; border-radius: 11px; background: #fff; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .room-card:hover, .room-card.selected { border-color: #e42b3b; box-shadow: 0 5px 18px #1a1a1a0b; }
@@ -28,6 +29,7 @@
 .seat-footnote { margin-top: 18px; color: #858b95; font-size: 11px; text-align: center; }
 @media (max-width: 700px) {
   .room-list { grid-template-columns: 1fr; padding: 12px; }
+  .room-filters, .room-filters select { width: 100%; }
   .room-card { grid-template-columns: 38px minmax(0, 1fr) auto; padding: 12px; }
   .room-card .badge { grid-column: 2; }
   .room-card .actions { grid-column: 3; }
