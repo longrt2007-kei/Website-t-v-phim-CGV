@@ -29,6 +29,7 @@ export function getRoomType(theaterId, room = '01') {
   } catch {
     // Dùng định dạng mặc định nếu danh sách phòng chưa được khởi tạo trên thiết bị này.
   }
+  // Phòng mặc định số 02 và 03 lần lượt là IMAX 2D và 4DX 2D.
   const roomNumber = Number(room)
   return roomNumber === 2 ? 'IMAX 2D' : roomNumber === 3 ? '4DX 2D' : '2D'
 }

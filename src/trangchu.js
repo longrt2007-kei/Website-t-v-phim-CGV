@@ -669,6 +669,7 @@ const openSeatSelection = async (m, theaterId, date, time, room = '01') => {
   const theater = theaters.find((t) => t.id === theaterId)
   const roomOptions = Array.from({ length: Math.max(1, Number(theater?.screens) || 1) }, (_, index) => {
     const value = String(index + 1).padStart(2, '0')
+    // Hiện định dạng cạnh số phòng để khách biết công nghệ chiếu trước khi chọn ghế.
     const format = getRoomType(theaterId, value)
     return `<option value="${value}" ${value === room ? 'selected' : ''}>Phòng ${index + 1} · ${format}</option>`
   }).join('')
@@ -883,6 +884,7 @@ const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupie
       theaterId,
       theaterName: theater?.name || theaterId,
       room,
+      // Lưu định dạng tại thời điểm mua để vé vẫn hiển thị đúng về sau.
       format: getRoomType(theaterId, room),
       date,
       time,

@@ -101,6 +101,7 @@ function render() {
               <dd>${esc(t.time)}</dd>
               </div>
               <div>
+              <!-- Vé cũ không có trường format sẽ lấy định dạng theo phòng -->
               <dt>Định dạng</dt>
               <dd>${esc(t.format || getRoomType(t.theaterId, t.room))}</dd>
               </div>

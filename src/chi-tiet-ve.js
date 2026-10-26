@@ -45,6 +45,7 @@ if (!booking) {
 
 const currentUser = getCachedUser()
 const defaultEmail = booking.userEmail || currentUser?.email || ''
+// Vé cũ chưa lưu định dạng thì tra lại theo cấu hình phòng hiện tại.
 const bookingFormat = booking.format || getRoomType(booking.theaterId, booking.room)
 // Mã vạch là SVG tạo tại chỗ; QR là ảnh do dịch vụ tạo QR bên ngoài cung cấp.
 const ticketEntries = getTicketEntries(booking)
