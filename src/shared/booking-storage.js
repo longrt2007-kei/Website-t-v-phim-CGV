@@ -18,6 +18,20 @@ export function getBookings() {
     return []
   }
 }
+// Tra định dạng phòng chiếu theo rạp và mã phòng đã lưu trong trang quản trị.
+export function getRoomType(theaterId, room = '01') {
+  try {
+    const rooms = JSON.parse(localStorage.getItem('cgv_demo_admin_rooms') || '[]')
+    const match = Array.isArray(rooms) && rooms.find((item) =>
+      String(item.theaterId) === String(theaterId) && String(item.name) === String(room),
+    )
+    if (match?.type) return match.type
+  } catch {
+    // Dùng định dạng mặc định nếu danh sách phòng chưa được khởi tạo trên thiết bị này.
+  }
+  const roomNumber = Number(room)
+  return roomNumber === 2 ? 'IMAX 2D' : roomNumber === 3 ? '4DX 2D' : '2D'
+}
 // Ghi danh sách vé vào localStorage.
 export function saveBookings(bookings) {
   localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookings))

@@ -8,6 +8,7 @@ import {
   PAYMENT_BANK,
   PAYMENT_ACCOUNT,
   formatDateTime,
+  getRoomType,
   loadUserBookings,
   deleteUserBooking,
 } from './shared/booking-storage.js'
@@ -98,6 +99,10 @@ function render() {
               <div>
               <dt>Suất chiếu</dt>
               <dd>${esc(t.time)}</dd>
+              </div>
+              <div>
+              <dt>Định dạng</dt>
+              <dd>${esc(t.format || getRoomType(t.theaterId, t.room))}</dd>
               </div>
               <div>
               <dt>Ghế</dt>

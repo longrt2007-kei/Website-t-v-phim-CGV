@@ -1,7 +1,7 @@
 // Trang vé điện tử: thông tin vé, mã vạch/QR, in vé và tạo bản nháp email.
 import './styles/ticket.css'
 import { generateBarcodeSvg } from './shared/barcode.js'
-import { getBookings, money, formatDateTime, loadUserBooking } from './shared/booking-storage.js'
+import { getBookings, money, formatDateTime, loadUserBooking, getRoomType } from './shared/booking-storage.js'
 import { getCachedUser } from './shared/auth.js'
 import { getTicketEntries } from './shared/ticket-codes.js'
 
@@ -45,6 +45,7 @@ if (!booking) {
 
 const currentUser = getCachedUser()
 const defaultEmail = booking.userEmail || currentUser?.email || ''
+const bookingFormat = booking.format || getRoomType(booking.theaterId, booking.room)
 // Mã vạch là SVG tạo tại chỗ; QR là ảnh do dịch vụ tạo QR bên ngoài cung cấp.
 const ticketEntries = getTicketEntries(booking)
 const barcodeCards = ticketEntries.map(({ seat, code }, index) => `
@@ -95,6 +96,10 @@ function createTicketEmailHtml(b) {
           <tr>
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Phòng:</td>
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;text-align:right;">Phòng ${Number(b.room || '01')}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Định dạng:</td>
+            <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;text-align:right;">${b.format || getRoomType(b.theaterId, b.room)}</td>
           </tr>
           <tr>
             <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Ghế ngồi:</td>
@@ -150,7 +155,7 @@ app.innerHTML = `
       <div class="eticket-movie-info">
         <h2>${booking.movie}</h2>
         <div class="eticket-movie-tags">
-          <span class="eticket-tag highlight">2D DIGITAL</span>
+          <span class="eticket-tag highlight">${bookingFormat}</span>
           <span class="eticket-tag">${booking.theaterName}</span>
           <span class="eticket-tag">Phòng ${Number(booking.room || '01')}</span>
         </div>
@@ -190,6 +195,10 @@ app.innerHTML = `
       <div class="eticket-field">
         <span>Phòng chiếu</span>
         <strong>Phòng ${Number(booking.room || '01')}</strong>
+      </div>
+      <div class="eticket-field">
+        <span>Định dạng</span>
+        <strong>${bookingFormat}</strong>
       </div>
       <div class="eticket-field">
         <span>Ghế ngồi</span>
@@ -309,6 +318,7 @@ emailForm?.addEventListener('submit', async (e) => {
       ...ticketEntries.map(({ seat, code }, index) => `Vé ${index + 1} · Ghế ${seat} · Mã vé: ${code}`),
       `Phim: ${booking.movie}`,
       `Rạp: ${booking.theaterName || booking.theaterId}`,
+      `Định dạng: ${booking.format || getRoomType(booking.theaterId, booking.room)}`,
       `Ngày / giờ: ${booking.date} ${booking.time}`,
       `Ghế: ${(booking.seats || []).join(', ')}`,
       `Tổng tiền: ${money(booking.amount)}`,

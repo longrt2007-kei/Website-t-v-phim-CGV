@@ -36,6 +36,7 @@ import {
   loadSeatHolds,
   DEFAULT_HOLD_DURATION_SECONDS,
   createUserBooking,
+  getRoomType,
 } from './shared/booking-storage.js'
 import { generateBarcodeSvg } from './shared/barcode.js'
 import { createTicketCodes, getTicketEntries } from './shared/ticket-codes.js'
@@ -529,6 +530,10 @@ const renderTicket = (booking, syncWarning = '') => {
           <strong>Phòng ${Number(booking.room || '01')}</strong>
         </div>
         <div>
+          <span>Định dạng</span>
+          <strong>${booking.format || getRoomType(booking.theaterId, booking.room)}</strong>
+        </div>
+        <div>
           <span>Ghế</span>
           <strong>${booking.seats.join(', ')}</strong>
         </div>
@@ -593,6 +598,7 @@ const renderTicket = (booking, syncWarning = '') => {
       `Vé CGV: ${booking.code}`,
       `Phim: ${booking.movie}`,
       `Rạp: ${booking.theaterName || theater?.name || ''}`,
+      `Định dạng: ${booking.format || getRoomType(booking.theaterId, booking.room)}`,
       `Ngày / giờ: ${booking.date} ${booking.time}`,
       `Ghế: ${(booking.seats || []).join(', ')}`,
       `Tổng tiền: ${Number(booking.amount || 0).toLocaleString('vi-VN')}đ`,
@@ -663,13 +669,14 @@ const openSeatSelection = async (m, theaterId, date, time, room = '01') => {
   const theater = theaters.find((t) => t.id === theaterId)
   const roomOptions = Array.from({ length: Math.max(1, Number(theater?.screens) || 1) }, (_, index) => {
     const value = String(index + 1).padStart(2, '0')
-    return `<option value="${value}" ${value === room ? 'selected' : ''}>Phòng ${index + 1}</option>`
+    const format = getRoomType(theaterId, value)
+    return `<option value="${value}" ${value === room ? 'selected' : ''}>Phòng ${index + 1} · ${format}</option>`
   }).join('')
   document.querySelector('#modalContent').innerHTML = `
     <div class="seat-flow-head">
       <span class="detail-kicker">BƯỚC 2 / 3 · CHỌN GHẾ</span>
       <h3>${m.title}</h3>
-      <p>${theater?.name || ''} · ${date} · ${time}</p>
+      <p>${theater?.name || ''} · Phòng ${Number(room)} · ${getRoomType(theaterId, room)} · ${date} · ${time}</p>
     </div>
     <div class="seat-flow-body">
       <label class="seat-room-select">Phòng chiếu
@@ -771,7 +778,7 @@ const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupie
     <div class="seat-flow-head payment-head">
       <span class="detail-kicker">BƯỚC 3 / 3 · THANH TOÁN &amp; GIỮ CHỖ</span>
       <h3>Quét QR để thanh toán</h3>
-      <p>${m.title} · ${theater?.name || ''} · Phòng ${Number(room)} · ${date} · ${time}</p>
+      <p>${m.title} · ${theater?.name || ''} · Phòng ${Number(room)} · ${getRoomType(theaterId, room)} · ${date} · ${time}</p>
     </div>
     <div class="seat-hold-banner" id="seatHoldBanner">
       <div class="seat-hold-top">
@@ -876,6 +883,7 @@ const openPayment = (m, theaterId, date, time, room, seats, occupiedMap, occupie
       theaterId,
       theaterName: theater?.name || theaterId,
       room,
+      format: getRoomType(theaterId, room),
       date,
       time,
       seats,
